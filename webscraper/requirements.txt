@@ -1,0 +1,7 @@
+# crawl4ai>=1.0.0
+streamlit>=1.24.0
+plotly>=5.13.0
+pandas>=1.5.3
+aiohttp>=3.8.4
+beautifulsoup4>=4.12.0
+lxml>=4.9.2
