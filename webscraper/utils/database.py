@@ -51,7 +51,8 @@ class DatabaseHandler:
                 end_time TIMESTAMP,
                 total_urls INTEGER,
                 successful INTEGER,
-                failed INTEGER
+                failed INTEGER,
+                current_memory_usage REAL
             );
         ''')
         self.conn.commit()
@@ -60,8 +61,8 @@ class DatabaseHandler:
         """Record crawl start and return crawl_id"""
         cursor = self.conn.cursor()
         cursor.execute('''
-            INSERT INTO crawl_stats (start_time, total_urls, successful, failed)
-            VALUES (?, 0, 0, 0)
+            INSERT INTO crawl_stats (start_time, total_urls, successful, failed, current_memory_usage)
+            VALUES (?, 0, 0, 0, 0.0)
         ''', (datetime.utcnow(),))
         crawl_id = cursor.lastrowid
         self.conn.commit()
@@ -90,29 +91,32 @@ class DatabaseHandler:
         """Save page metadata to database"""
         cursor = self.conn.cursor()
         
-        # Insert page data
-        cursor.execute('''
-            INSERT INTO pages (url, title, filepath, status, error_message, crawled_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (url, title, str(filepath), status, error_message, datetime.utcnow()))
-        page_id = cursor.lastrowid
-        
-        # Insert images
-        for img in images:
+        try:
+            # Insert page data
             cursor.execute('''
-                INSERT INTO images (page_id, url, filepath)
-                VALUES (?, ?, ?)
-            ''', (page_id, img['url'], img.get('filepath')))
-        
-        # Insert links
-        for link in links:
-            is_internal = True  # This should be determined by the caller
-            cursor.execute('''
-                INSERT INTO links (page_id, url, is_internal)
-                VALUES (?, ?, ?)
-            ''', (page_id, link, is_internal))
-        
-        self.conn.commit()
+                INSERT OR REPLACE INTO pages (url, title, filepath, status, error_message, crawled_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (url, title, str(filepath), status, error_message, datetime.utcnow()))
+            page_id = cursor.lastrowid
+            
+            # Insert images
+            if images:
+                cursor.executemany('''
+                    INSERT INTO images (page_id, url, filepath)
+                    VALUES (?, ?, ?)
+                ''', [(page_id, img['url'], img.get('filepath')) for img in images])
+            
+            # Insert links
+            if links:
+                cursor.executemany('''
+                    INSERT INTO links (page_id, url, is_internal)
+                    VALUES (?, ?, ?)
+                ''', [(page_id, link, True) for link in links])
+            
+            self.conn.commit()
+        except Exception as e:
+            logger.error(f"Error saving metadata for {url}: {str(e)}")
+            self.conn.rollback()
 
     def update_crawl_stats(self, crawl_id: int, success: bool):
         """Update crawl statistics"""
@@ -133,18 +137,36 @@ class DatabaseHandler:
             ''', (crawl_id,))
         self.conn.commit()
 
+    def update_memory_usage(self, crawl_id: int, memory_usage: float):
+        """Update current memory usage"""
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            UPDATE crawl_stats 
+            SET current_memory_usage = ?
+            WHERE id = ?
+        ''', (memory_usage, crawl_id))
+        self.conn.commit()
+
     def get_crawl_stats(self, crawl_id: int) -> Dict:
         """Get statistics for a crawl"""
         cursor = self.conn.cursor()
-        cursor.execute('SELECT * FROM crawl_stats WHERE id = ?', (crawl_id,))
-        stats = cursor.fetchone()
-        if stats:
+        cursor.execute('''
+            SELECT 
+                total_urls, successful, failed, 
+                start_time, end_time, current_memory_usage 
+            FROM crawl_stats 
+            WHERE id = ?
+        ''', (crawl_id,))
+        
+        row = cursor.fetchone()
+        if row:
             return {
-                'total_urls': stats[3],
-                'successful': stats[4],
-                'failed': stats[5],
-                'start_time': stats[1],
-                'end_time': stats[2]
+                'total_urls': row[0],
+                'successful': row[1],
+                'failed': row[2],
+                'start_time': row[3],
+                'end_time': row[4],
+                'current_memory_usage': row[5]
             }
         return {}
 

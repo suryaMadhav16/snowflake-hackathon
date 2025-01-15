@@ -1,11 +1,12 @@
-# Advanced Web Scraper with Memory Management and Anti-Bot Features
+# Advanced Web Scraper with URL Pattern Selection and History Tracking
 
-A robust web scraper with comprehensive memory management, anti-bot measures, and a Streamlit dashboard for monitoring and analysis.
+A robust web scraper with comprehensive memory management, anti-bot measures, URL pattern selection, history tracking, and a Streamlit dashboard for monitoring and analysis.
 
 ## Features
 
 ### Core Capabilities
 - Full domain crawling with sitemap support
+- URL pattern analysis and selective crawling
 - Markdown content generation
 - Image and PDF downloading
 - Complete link coverage tracking
@@ -14,28 +15,36 @@ A robust web scraper with comprehensive memory management, anti-bot measures, an
 - Anti-bot protection
 - Real-time progress monitoring
 - Comprehensive reporting
+- Historical crawl tracking
 
-### Memory Management
-- Batch processing with configurable sizes
-- Memory usage monitoring with psutil
-- Automatic pausing on high memory
-- Cache clearing between batches
-- Resource cleanup
+### New Features
+1. **URL Pattern Analysis**
+   - Automatic sitemap discovery
+   - Pattern extraction and grouping
+   - URL count per pattern
+   - Selective pattern crawling
+   - Dynamic URL filtering
 
-### Anti-Bot Measures
-- User agent rotation
-- Random delays between requests
-- Stealth mode with magic=True
-- Request rate limiting
-- Human behavior simulation
+2. **Crawl History**
+   - Domain-wise crawl history
+   - Success rate tracking
+   - Memory usage graphs
+   - Detailed statistics per domain
+   - Timeline visualization
 
-### Data Processing
-- Sitemap-based URL discovery
-- Recursive sitemap index handling
-- Image and PDF downloading
-- Internal/external link tracking
-- Metadata extraction
-- Progress persistence
+3. **Enhanced UI**
+   - Two-page navigation (Crawler & History)
+   - Pattern selection interface
+   - Real-time memory graphs
+   - Batch progress tracking
+   - Historical data visualization
+
+### Previous Features
+- Memory Management
+- Anti-Bot Measures
+- Data Processing
+- Sitemap Support
+- Error Handling
 
 ## Project Structure
 
@@ -46,145 +55,96 @@ webscraper/
 ├── utils/
 │   ├── monitors.py     # Memory and anti-bot monitoring
 │   ├── database.py     # Database operations
-│   └── processor.py    # Content processing
+│   ├── processor.py    # Content processing
+│   ├── url_analyzer.py # URL pattern analysis
+│   └── history_analyzer.py # Crawl history analysis
 └── requirements.txt    # Project dependencies
 ```
 
 ## Implementation Details
 
-### 1. Core Scraper (scraper.py)
-The main scraper implementation handling the crawling process.
+### 1. URL Pattern Analyzer (utils/url_analyzer.py)
+```python
+class URLPatternAnalyzer:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.domain = urlparse(base_url).netloc
+        self.patterns = defaultdict(set)
+        
+    def _extract_pattern(self, url: str) -> str:
+        # URL pattern extraction logic
+        path = parsed.path
+        path = re.sub(r'/\d+', '/{n}', path)
+        path = re.sub(r'/[a-f0-9]{8,}', '/{id}', path)
+        path = re.sub(r'/\d{4}/\d{2}/\d{2}', '/{date}', path)
+        return path
+```
 
+### 2. History Analyzer (utils/history_analyzer.py)
+```python
+class CrawlHistoryAnalyzer:
+    def get_domain_stats(self, domain: str) -> Dict:
+        # Get statistics for each domain
+        return {
+            'domain': domain,
+            'crawls': len(crawls_df),
+            'total_pages': pages_df['total_pages'].iloc[0],
+            'success_rate': success_rate,
+            'crawl_history': crawls_df.to_dict('records')
+        }
+```
+
+### 3. Enhanced Scraper (scraper.py)
 ```python
 class WebScraper:
-    def __init__(
-        self,
-        base_url: str,
-        output_dir: str,
-        max_concurrent: int = 5,
-        requests_per_second: float = 2.0,
-        memory_threshold_mb: int = 1000,
-        batch_size: int = 10
-    ):
-        # Initialize core components
-        self.memory_monitor = MemoryMonitor(memory_threshold_mb)
-        self.anti_bot = AntiBot(requests_per_second)
-        self.db = DatabaseHandler(self.domain_dir / 'stats.db')
-        self.processor = ContentProcessor(self.domain_dir, self.domain)
+    def __init__(self, ..., test_mode: bool = False):
+        self.test_mode = test_mode
+        self.override_discovered_urls = None
+
+    async def crawl(self):
+        if self.override_discovered_urls:
+            self.discovered_urls = set(self.override_discovered_urls)
+        else:
+            sitemap_urls = await self.discover_sitemap_urls()
 ```
 
-Key methods:
-- `discover_sitemap_urls()`: Extracts URLs from sitemap.xml
-- `process_url()`: Handles single URL processing
-- `process_batch()`: Manages batch processing with memory checks
-- `crawl()`: Main crawling loop with anti-bot measures
-
-### 2. Memory Monitoring (utils/monitors.py)
-Handles memory management and anti-bot measures.
-
+### 4. Streamlit Dashboard (app.py)
 ```python
-class MemoryMonitor:
-    def __init__(self, threshold_mb: int = 1000):
-        self.process = psutil.Process()
-        self.threshold_mb = threshold_mb
-    
-    def check_memory(self) -> bool:
-        memory_mb = self.process.memory_info().rss / 1024 / 1024
-        return memory_mb < self.threshold_mb
-
-class AntiBot:
-    async def random_delay(self):
-        delay = random.uniform(1.0, 3.0) / self.requests_per_second
-        await asyncio.sleep(delay)
+def display_pattern_selection():
+    """Display URL pattern selection interface"""
+    for pattern, data in st.session_state.url_patterns.items():
+        col1, col2, col3, col4 = st.columns([0.5, 2, 1, 2])
+        with col1:
+            if st.checkbox("", key=f"pattern_{hash(pattern)}"):
+                selected_patterns.add(pattern)
 ```
 
-Features:
-- Memory usage tracking
-- Configurable thresholds
-- User agent rotation
-- Random delay generation
+## Features in Detail
 
-### 3. Database Handler (utils/database.py)
-Manages data persistence and statistics.
+### URL Pattern Analysis
+1. **Pattern Detection**
+   - Numeric parameters -> {n}
+   - UUIDs/hashes -> {id}
+   - Dates -> {date}
+   - Slugs -> {slug}
 
-```python
-class DatabaseHandler:
-    def _setup_tables(self):
-        """Initialize database schema"""
-        cursor.executescript('''
-            CREATE TABLE IF NOT EXISTS pages (
-                id INTEGER PRIMARY KEY,
-                url TEXT UNIQUE,
-                title TEXT,
-                filepath TEXT,
-                status TEXT,
-                error_message TEXT,
-                crawled_at TIMESTAMP
-            );
-            # ... other tables
-        ''')
-```
+2. **Pattern Selection**
+   - Checkbox selection
+   - Count display
+   - Example URLs
+   - Total URL counter
 
-Tables:
-- pages: Stores page metadata
-- images: Tracks downloaded images
-- links: Records page links
-- crawl_stats: Maintains crawling statistics
+3. **Memory Management**
+   - Batch processing
+   - Memory monitoring
+   - Automatic pausing
+   - Resource cleanup
 
-### 4. Content Processor (utils/processor.py)
-Handles content processing and file management.
-
-```python
-class ContentProcessor:
-    async def process_images(self, html: str, base_url: str) -> List[Dict]:
-        """Process and download images from HTML"""
-        soup = BeautifulSoup(html, 'html.parser')
-        images = []
-        for img in soup.find_all('img', src=True):
-            img_url = urljoin(base_url, img['src'])
-            # Download and track images
-```
-
-Features:
-- Image downloading
-- PDF processing
-- Link extraction
-- Markdown generation
-- Title extraction
-
-### 5. Streamlit Dashboard (app.py)
-Interactive monitoring and reporting interface.
-
-```python
-def display_crawl_status(stats: dict):
-    """Display current crawling status"""
-    st.header("Crawling Status")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total URLs", stats['total_urls'])
-    col2.metric("Successful", stats['successful'])
-    col3.metric("Failed", stats['failed'])
-    col4.metric("Success Rate", f"{stats['success_rate']:.1f}%")
-```
-
-Features:
-- Real-time progress monitoring
-- Interactive visualizations
-- Detailed page information
-- Error reporting
-- Downloadable reports
-
-## Output Structure
-
-```
-output_dir/
-  ├── domain.com/
-  │   ├── content/        # Markdown files
-  │   ├── images/         # Downloaded images
-  │   ├── pdfs/          # Downloaded PDFs
-  │   ├── metadata/      # JSON metadata files
-  │   └── stats.db       # SQLite database
-```
+4. **History Tracking**
+   - Domain statistics
+   - Success rates
+   - Memory graphs
+   - Timeline views
 
 ## Installation
 
@@ -200,84 +160,43 @@ streamlit run app.py
 
 ## Usage
 
-1. Start the dashboard:
-```bash
-streamlit run app.py
-```
+1. **URL Analysis and Crawling**
+   - Enter website URL
+   - Click "Analyze Sitemap"
+   - Select desired URL patterns
+   - Start crawling
 
-2. Enter the website URL and output directory
-3. Monitor progress in real-time
-4. View statistics and download reports
-5. Check the stats.db for detailed information
+2. **History Viewing**
+   - Navigate to History page
+   - View domain statistics
+   - Analyze success rates
+   - Monitor memory usage
 
 ## Best Practices
 
-1. Memory Management:
-- Keep batch_size reasonable (default: 10)
-- Set appropriate memory_threshold_mb
-- Monitor memory usage logs
-- Clear caches regularly
+1. **Pattern Selection**
+   - Review patterns before crawling
+   - Check example URLs
+   - Monitor URL counts
+   - Use test mode initially
 
-2. Anti-Bot Protection:
-- Use reasonable requests_per_second
-- Enable magic mode
-- Utilize random delays
-- Rotate user agents
+2. **Memory Management**
+   - Keep batch sizes reasonable
+   - Monitor memory graphs
+   - Set appropriate thresholds
+   - Enable automatic pausing
 
-3. Error Handling:
-- Check logs for errors
-- Monitor failed URLs
-- Review error messages
-- Adjust timeouts if needed
+3. **History Analysis**
+   - Review past crawls
+   - Check success rates
+   - Monitor memory trends
+   - Analyze failures
 
-4. Data Management:
-- Regularly backup stats.db
-- Clean up old content
-- Monitor disk usage
-- Review crawl statistics
-
-## Error Handling
-
-The scraper implements comprehensive error handling:
-- URL-level error tracking
-- Batch processing failure recovery
-- Memory overflow protection
-- Database transaction safety
-- Resource cleanup
-
-## Performance Optimization
-
-1. Batch Processing:
-- Configurable batch sizes
-- Memory-aware processing
-- Automatic pausing
-- Cache management
-
-2. Resource Management:
-- Connection pooling
-- File handle cleanup
-- Memory monitoring
-- Garbage collection
-
-3. Concurrent Processing:
-- Async/await patterns
-- Semaphore control
-- Rate limiting
-- Resource sharing
-
-## Monitoring and Logging
-
-1. Real-time Monitoring:
-- Memory usage tracking
-- URL processing status
-- Error reporting
-- Progress indicators
-
-2. Logging:
-- Detailed error logs
-- Processing statistics
-- Performance metrics
-- Status updates
+4. **Error Handling**
+   - Check error messages
+   - Review failed URLs
+   - Adjust timeouts
+   - Monitor resources
 
 ## Contributing
 
