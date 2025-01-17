@@ -17,3 +17,5 @@ webscraper/__pycache__/scraper.cpython-312.pyc
 webscraper/utils/__pycache__/database.cpython-312.pyc
 webscraper/utils/__pycache__/history_analyzer.cpython-312.pyc
 webscraper/utils/__pycache__/url_analyzer.cpython-312.pyc
+webscraper/utils/__pycache__/history_analyzer.cpython-312.pyc
+webscraper/utils/__pycache__/url_analyzer.cpython-312.pyc

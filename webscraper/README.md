@@ -1,150 +1,45 @@
-# Advanced Web Scraper with URL Pattern Selection and History Tracking
+# Web Scraper with Crawl4AI Integration
 
-A robust web scraper with comprehensive memory management, anti-bot measures, URL pattern selection, history tracking, and a Streamlit dashboard for monitoring and analysis.
+A robust web scraper powered by Crawl4AI with comprehensive domain crawling, memory management, and anti-bot measures.
 
 ## Features
 
 ### Core Capabilities
 - Full domain crawling with sitemap support
-- URL pattern analysis and selective crawling
-- Markdown content generation
-- Image and PDF downloading
-- Complete link coverage tracking
-- Structured metadata storage
-- Memory-aware processing
-- Anti-bot protection
-- Real-time progress monitoring
-- Comprehensive reporting
-- Historical crawl tracking
+- Comprehensive link discovery and crawling
+- Pattern-based URL exclusions
+- Content storage in Markdown format
+- Image and PDF downloading with metadata
+- Screenshot capture
+- Memory usage monitoring
+- Built-in anti-bot protection
+- Real-time progress tracking
+- Browser automation with Crawl4AI
 
-### New Features
-1. **URL Pattern Analysis**
-   - Automatic sitemap discovery
-   - Pattern extraction and grouping
-   - URL count per pattern
-   - Selective pattern crawling
-   - Dynamic URL filtering
-
-2. **Crawl History**
-   - Domain-wise crawl history
-   - Success rate tracking
-   - Memory usage graphs
-   - Detailed statistics per domain
-   - Timeline visualization
-
-3. **Enhanced UI**
-   - Two-page navigation (Crawler & History)
-   - Pattern selection interface
-   - Real-time memory graphs
-   - Batch progress tracking
-   - Historical data visualization
-
-### Previous Features
-- Memory Management
-- Anti-Bot Measures
-- Data Processing
-- Sitemap Support
-- Error Handling
+### Enhanced Features
+- Parallel batch processing
+- Memory-aware throttling
+- Performance metrics tracking
+- Content analytics
+- URL pattern analysis
+- Resource optimization
+- Snowflake integration
 
 ## Project Structure
 
 ```
 webscraper/
-├── scraper.py           # Main scraping logic
+├── scraper.py           # Main scraping logic with Crawl4AI
 ├── app.py              # Streamlit dashboard
 ├── utils/
-│   ├── monitors.py     # Memory and anti-bot monitoring
+│   ├── monitors.py     # Memory and performance monitoring
 │   ├── database.py     # Database operations
 │   ├── processor.py    # Content processing
-│   ├── url_analyzer.py # URL pattern analysis
-│   └── history_analyzer.py # Crawl history analysis
+│   ├── history_analyzer.py  # Crawl history analysis
+│   └── url_analyzer.py      # URL pattern analysis
+├── SNOWFLAKE_INTEGRATION.md  # Snowflake integration details
 └── requirements.txt    # Project dependencies
 ```
-
-## Implementation Details
-
-### 1. URL Pattern Analyzer (utils/url_analyzer.py)
-```python
-class URLPatternAnalyzer:
-    def __init__(self, base_url: str):
-        self.base_url = base_url
-        self.domain = urlparse(base_url).netloc
-        self.patterns = defaultdict(set)
-        
-    def _extract_pattern(self, url: str) -> str:
-        # URL pattern extraction logic
-        path = parsed.path
-        path = re.sub(r'/\d+', '/{n}', path)
-        path = re.sub(r'/[a-f0-9]{8,}', '/{id}', path)
-        path = re.sub(r'/\d{4}/\d{2}/\d{2}', '/{date}', path)
-        return path
-```
-
-### 2. History Analyzer (utils/history_analyzer.py)
-```python
-class CrawlHistoryAnalyzer:
-    def get_domain_stats(self, domain: str) -> Dict:
-        # Get statistics for each domain
-        return {
-            'domain': domain,
-            'crawls': len(crawls_df),
-            'total_pages': pages_df['total_pages'].iloc[0],
-            'success_rate': success_rate,
-            'crawl_history': crawls_df.to_dict('records')
-        }
-```
-
-### 3. Enhanced Scraper (scraper.py)
-```python
-class WebScraper:
-    def __init__(self, ..., test_mode: bool = False):
-        self.test_mode = test_mode
-        self.override_discovered_urls = None
-
-    async def crawl(self):
-        if self.override_discovered_urls:
-            self.discovered_urls = set(self.override_discovered_urls)
-        else:
-            sitemap_urls = await self.discover_sitemap_urls()
-```
-
-### 4. Streamlit Dashboard (app.py)
-```python
-def display_pattern_selection():
-    """Display URL pattern selection interface"""
-    for pattern, data in st.session_state.url_patterns.items():
-        col1, col2, col3, col4 = st.columns([0.5, 2, 1, 2])
-        with col1:
-            if st.checkbox("", key=f"pattern_{hash(pattern)}"):
-                selected_patterns.add(pattern)
-```
-
-## Features in Detail
-
-### URL Pattern Analysis
-1. **Pattern Detection**
-   - Numeric parameters -> {n}
-   - UUIDs/hashes -> {id}
-   - Dates -> {date}
-   - Slugs -> {slug}
-
-2. **Pattern Selection**
-   - Checkbox selection
-   - Count display
-   - Example URLs
-   - Total URL counter
-
-3. **Memory Management**
-   - Batch processing
-   - Memory monitoring
-   - Automatic pausing
-   - Resource cleanup
-
-4. **History Tracking**
-   - Domain statistics
-   - Success rates
-   - Memory graphs
-   - Timeline views
 
 ## Installation
 
@@ -160,48 +55,196 @@ streamlit run app.py
 
 ## Usage
 
-1. **URL Analysis and Crawling**
-   - Enter website URL
-   - Click "Analyze Sitemap"
-   - Select desired URL patterns
-   - Start crawling
+1. Enter the website URL to crawl
+2. Configure crawling options:
+   - Browser type (chromium/firefox/webkit)
+   - Exclusion patterns
+   - Output directory
+   - Performance settings
+3. Enable/disable advanced features:
+   - Screenshot capture
+   - PDF generation
+   - Anti-bot protection
+   - User simulation
+4. Start crawling!
 
-2. **History Viewing**
-   - Navigate to History page
-   - View domain statistics
-   - Analyze success rates
-   - Monitor memory usage
+## Configuration
+
+### Basic Settings
+- **Browser Type**: Choose between chromium, firefox, or webkit
+- **Test Mode**: Limits crawling to first 15 pages
+- **Exclusion Patterns**: Regex patterns for URLs to exclude
+- **Output Directory**: Where to store crawled content
+
+### Performance Settings
+- **Max Concurrent**: Maximum concurrent crawling sessions
+- **Memory Threshold**: Memory usage limit before throttling
+- **Request Rate**: Requests per second limit
+- **Batch Size**: URLs to process in each batch
+
+### Advanced Options
+- **Screenshot Capture**: Enable automated screenshot capture
+- **PDF Generation**: Generate PDF versions of pages
+- **Anti-Bot Protection**: Enable advanced anti-bot measures
+- **User Simulation**: Simulate human-like browsing behavior
+- **Cache Control**: Configure caching behavior
+- **Timeout Settings**: Customize page load timeouts
+
+## Output Structure
+
+```
+output_dir/
+  ├── domain.com/
+  │   ├── content/         # Markdown files
+  │   │   └── {hash}.md   # Content files
+  │   ├── images/         # Downloaded images
+  │   │   └── {hash}.{ext}
+  │   ├── pdfs/          # Downloaded PDFs
+  │   │   └── {hash}.pdf
+  │   ├── screenshots/    # Page screenshots
+  │   │   └── {hash}.png
+  │   └── stats.db       # SQLite database
+```
+
+## Advanced Usage
+
+### URL Pattern Analysis
+```python
+from utils.url_analyzer import URLPatternAnalyzer
+
+analyzer = URLPatternAnalyzer(base_url)
+patterns = await analyzer.analyze_sitemap()
+```
+
+### Performance Monitoring
+```python
+from utils.monitors import MemoryMonitor, AntiBot
+
+memory_monitor = MemoryMonitor(threshold_mb=1000)
+anti_bot = AntiBot(requests_per_second=2.0)
+```
+
+### Content Processing
+```python
+from utils.processor import ContentProcessor
+
+processor = ContentProcessor(domain_dir, domain)
+result = await processor.process_crawl_result(crawl_result)
+```
+
+### History Analysis
+```python
+from utils.history_analyzer import CrawlHistoryAnalyzer
+
+analyzer = CrawlHistoryAnalyzer(base_dir)
+stats = analyzer.get_domain_stats(domain)
+```
 
 ## Best Practices
 
-1. **Pattern Selection**
-   - Review patterns before crawling
-   - Check example URLs
-   - Monitor URL counts
-   - Use test mode initially
+### Memory Management
+- Monitor memory usage through dashboard
+- Set appropriate memory thresholds
+- Use batch processing for large sites
+- Enable caching for repeated crawls
 
-2. **Memory Management**
-   - Keep batch sizes reasonable
-   - Monitor memory graphs
-   - Set appropriate thresholds
-   - Enable automatic pausing
+### Anti-Bot Protection
+- Enable magic mode for stealth
+- Use appropriate request delays
+- Rotate user agents
+- Simulate user behavior
 
-3. **History Analysis**
-   - Review past crawls
-   - Check success rates
-   - Monitor memory trends
-   - Analyze failures
+### Performance Optimization
+- Use appropriate concurrency levels
+- Enable browser reuse
+- Configure caching strategy
+- Monitor resource usage
 
-4. **Error Handling**
-   - Check error messages
-   - Review failed URLs
-   - Adjust timeouts
-   - Monitor resources
+### Error Handling
+- Implement retry mechanisms
+- Log failed requests
+- Monitor error patterns
+- Set appropriate timeouts
+
+## Snowflake Integration
+
+See [SNOWFLAKE_INTEGRATION.md](SNOWFLAKE_INTEGRATION.md) for detailed instructions on:
+- Data storage structure
+- Migration process
+- Query patterns
+- Analytics capabilities
 
 ## Contributing
 
-Feel free to submit issues and enhancement requests!
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+### Development Setup
+```bash
+# Clone repository
+git clone https://github.com/yourusername/webscraper.git
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Running Tests
+```bash
+# Run unit tests
+pytest tests/
+
+# Run integration tests
+pytest tests/integration/
+
+# Check code style
+flake8 webscraper/
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. Memory Usage
+   - Check memory monitor output
+   - Adjust batch size
+   - Enable garbage collection
+
+2. Anti-Bot Detection
+   - Enable magic mode
+   - Increase request delays
+   - Use user simulation
+
+3. Performance Issues
+   - Check concurrent requests
+   - Monitor CPU usage
+   - Verify network conditions
+
+4. Data Quality
+   - Check content processor logs
+   - Verify markdown output
+   - Monitor resource downloads
+
+### Getting Help
+
+- Check the issues section
+- Review error logs
+- Contact maintainers
 
 ## License
 
-MIT License - feel free to use in your own projects.
+MIT License - see [LICENSE](LICENSE) for details
+
+## Acknowledgments
+
+- Crawl4AI team for the excellent crawler framework
+- Snowflake for database integration capabilities
+- Streamlit for the dashboard framework
+- Community contributors and users
+

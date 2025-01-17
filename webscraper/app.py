@@ -8,16 +8,21 @@ import asyncio
 from urllib.parse import urlparse
 import logging
 from datetime import datetime
+import json
 from scraper import WebScraper
-from utils.url_analyzer import URLPatternAnalyzer
-from utils.history_analyzer import CrawlHistoryAnalyzer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-st.set_page_config(page_title="Web Scraper Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Web Scrapper Dashboard",
+    layout="wide",
+    menu_items={
+        'About': "Web Crawler powered by Crawl4AI"
+    }
+)
 
 # Initialize session state
 if 'crawling' not in st.session_state:
@@ -28,112 +33,8 @@ if 'last_update' not in st.session_state:
     st.session_state.last_update = None
 if 'memory_usage' not in st.session_state:
     st.session_state.memory_usage = []
-if 'url_patterns' not in st.session_state:
-    st.session_state.url_patterns = {}
-if 'selected_patterns' not in st.session_state:
-    st.session_state.selected_patterns = set()
-if 'analyzer' not in st.session_state:
-    st.session_state.analyzer = None
-
-async def analyze_sitemap(url: str):
-    """Analyze sitemap and update patterns"""
-    analyzer = URLPatternAnalyzer(url)
-    st.session_state.analyzer = analyzer  # Store analyzer for later use
-    patterns = await analyzer.analyze_sitemap()
-    st.session_state.url_patterns = patterns
-    return patterns
-
-def display_pattern_selection():
-    """Display URL pattern selection interface"""
-    st.subheader("Select URL Patterns to Crawl")
-    
-    if not st.session_state.url_patterns:
-        st.info("No URL patterns found. Please analyze sitemap first.")
-        return set()
-    
-    total_urls = 0
-    selected_patterns = set()
-    
-    # Create a table for pattern display
-    col1, col2, col3, col4 = st.columns([0.5, 2, 1, 2])
-    with col1:
-        st.markdown("**Select**")
-    with col2:
-        st.markdown("**Pattern**")
-    with col3:
-        st.markdown("**Count**")
-    with col4:
-        st.markdown("**Example URL**")
-    
-    for pattern, data in st.session_state.url_patterns.items():
-        col1, col2, col3, col4 = st.columns([0.5, 2, 1, 2])
-        with col1:
-            if st.checkbox("", key=f"pattern_{hash(pattern)}"):
-                selected_patterns.add(pattern)
-                total_urls += data['count']
-        with col2:
-            st.text(pattern)
-        with col3:
-            st.text(data['count'])
-        with col4:
-            st.markdown(f"<small>{data['example']}</small>", unsafe_allow_html=True)
-    
-    if selected_patterns:
-        st.info(f"Selected {len(selected_patterns)} patterns with total {total_urls} URLs")
-    
-    st.session_state.selected_patterns = selected_patterns
-    return selected_patterns
-
-def display_crawl_history():
-    """Display crawl history for all domains"""
-    st.header("Crawl History")
-    
-    analyzer = CrawlHistoryAnalyzer()
-    stats = analyzer.get_all_stats()
-    
-    if not stats:
-        st.info("No crawl history found. Start crawling to see statistics here.")
-        return
-    
-    # Summary metrics
-    total_domains = len(stats)
-    total_pages = sum(s['total_pages'] for s in stats)
-    total_successful = sum(s['successful_pages'] for s in stats)
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Domains", total_domains)
-    col2.metric("Total Pages", total_pages)
-    col3.metric("Success Rate", f"{(total_successful/total_pages*100):.1f}%" if total_pages > 0 else "0%")
-    
-    # Domain details
-    st.subheader("Domain Statistics")
-    for domain_stats in stats:
-        with st.expander(f"Domain: {domain_stats['domain']}"):
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Pages", domain_stats['total_pages'])
-            col2.metric("Successful", domain_stats['successful_pages'])
-            col3.metric("Failed", domain_stats['failed_pages'])
-            col4.metric("Success Rate", f"{domain_stats['success_rate']:.1f}%")
-            
-            if domain_stats['crawl_history']:
-                df = pd.DataFrame(domain_stats['crawl_history'])
-                df['start_time'] = pd.to_datetime(df['start_time'])
-                df['end_time'] = pd.to_datetime(df['end_time'])
-                
-                # Memory usage chart
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=df['end_time'],
-                    y=df['current_memory_usage'],
-                    mode='lines+markers',
-                    name='Memory Usage (MB)'
-                ))
-                fig.update_layout(
-                    title='Memory Usage Over Time',
-                    xaxis_title='Time',
-                    yaxis_title='Memory Usage (MB)'
-                )
-                st.plotly_chart(fig, use_container_width=True)
+if 'performance_metrics' not in st.session_state:
+    st.session_state.performance_metrics = []
 
 async def update_stats(url: str, output_dir: str):
     """Update stats periodically"""
@@ -143,16 +44,38 @@ async def update_stats(url: str, output_dir: str):
         
         if db_path.exists():
             conn = sqlite3.connect(str(db_path))
-            stats = pd.read_sql_query('SELECT * FROM crawl_stats ORDER BY start_time DESC LIMIT 1', conn)
+            
+            # Get comprehensive stats
+            stats = pd.read_sql_query('''
+                SELECT cs.*, 
+                       COUNT(DISTINCT p.id) as pages_count,
+                       COUNT(DISTINCT i.id) as images_count,
+                       COUNT(DISTINCT l.id) as links_count,
+                       SUM(CASE WHEN p.pdf_path IS NOT NULL THEN 1 ELSE 0 END) as pdfs_count,
+                       SUM(CASE WHEN p.screenshot_path IS NOT NULL THEN 1 ELSE 0 END) as screenshots_count
+                FROM crawl_stats cs
+                LEFT JOIN pages p ON p.crawled_at BETWEEN cs.start_time AND COALESCE(cs.end_time, datetime('now'))
+                LEFT JOIN images i ON i.page_id = p.id
+                LEFT JOIN links l ON l.page_id = p.id
+                WHERE cs.id = (SELECT MAX(id) FROM crawl_stats)
+                GROUP BY cs.id
+            ''', conn)
             
             if not stats.empty:
+                # Update stats in session state
                 st.session_state.stats = {
                     'total_urls': stats['total_urls'].iloc[0],
                     'successful': stats['successful'].iloc[0],
                     'failed': stats['failed'].iloc[0],
-                    'current_memory_usage': stats['current_memory_usage'].iloc[0]
+                    'current_memory_usage': stats['current_memory_usage'].iloc[0],
+                    'pages_count': stats['pages_count'].iloc[0],
+                    'images_count': stats['images_count'].iloc[0],
+                    'links_count': stats['links_count'].iloc[0],
+                    'pdfs_count': stats['pdfs_count'].iloc[0],
+                    'screenshots_count': stats['screenshots_count'].iloc[0]
                 }
                 
+                # Update memory usage history
                 st.session_state.memory_usage.append({
                     'time': datetime.now().strftime('%H:%M:%S'),
                     'usage': stats['current_memory_usage'].iloc[0]
@@ -166,20 +89,32 @@ async def update_stats(url: str, output_dir: str):
         
         await asyncio.sleep(2)
 
-async def start_crawling(url: str, output_dir: str, test_mode: bool = False):
-    """Start the crawling process"""
+async def start_crawling(url: str, output_dir: str, exclusion_patterns: str,
+                        browser_type: str = "chromium", test_mode: bool = False,
+                        max_concurrent: int = 50, requests_per_second: float = 10.0,
+                        memory_threshold_mb: int = 4000, batch_size: int = 200,
+                        advanced_config: dict = None):
+    """Start the crawling process with enhanced parallel processing"""
     try:
+        # Process exclusion patterns
+        patterns = [p.strip() for p in exclusion_patterns.split(',') if p.strip()]
+        
+        # Initialize scraper with configuration
         scraper = WebScraper(
             base_url=url,
             output_dir=output_dir,
-            max_concurrent=5,
-            requests_per_second=2.0,
-            test_mode=test_mode
+            exclusion_patterns=patterns,
+            max_concurrent=max_concurrent,
+            requests_per_second=requests_per_second,
+            memory_threshold_mb=memory_threshold_mb,
+            batch_size=batch_size,
+            test_mode=test_mode,
+            browser_type=browser_type,
+            enable_screenshots=advanced_config.get('screenshot', True) if advanced_config else True,
+            enable_pdfs=advanced_config.get('pdf', True) if advanced_config else True,
+            enable_magic=advanced_config.get('magic', True) if advanced_config else True,
+            simulate_user=advanced_config.get('simulate_user', True) if advanced_config else True
         )
-        
-        # If patterns are selected, filter URLs
-        if st.session_state.selected_patterns and st.session_state.analyzer:
-            scraper.override_discovered_urls = st.session_state.analyzer.filter_urls(st.session_state.selected_patterns)
         
         # Start stats update task
         st.session_state.crawling = True
@@ -201,60 +136,162 @@ async def start_crawling(url: str, output_dir: str, test_mode: bool = False):
 def main():
     st.title("Web Scraper Dashboard")
     
-    # Navigation
-    page = st.sidebar.radio("Navigation", ["Crawler", "History"])
-    
-    if page == "Crawler":
-        # Input form
-        with st.form("crawl_form"):
-            url = st.text_input("Enter website URL to crawl")
-            output_dir = st.text_input("Output Directory", "/tmp/webscraper")
+    # Sidebar configuration
+    with st.sidebar:
+        st.header("Configuration")
+        
+        # Basic Settings
+        st.subheader("Basic Settings")
+        browser_type = st.selectbox(
+            "Browser Type",
+            ["chromium", "firefox", "webkit"],
+            help="Select browser engine for crawling"
+        )
+        
+        # Enhanced parallel processing settings
+        max_concurrent = st.slider(
+            "Max Concurrent Requests",
+            min_value=10,
+            max_value=100,
+            value=50,
+            help="Maximum number of concurrent crawling sessions. Higher values may require more system resources."
+        )
+        
+        memory_threshold = st.slider(
+            "Memory Threshold (MB)",
+            min_value=1000,
+            max_value=8000,
+            value=4000,
+            step=500,
+            help="Maximum memory usage before throttling"
+        )
+        
+        requests_per_second = st.slider(
+            "Requests Per Second",
+            min_value=1.0,
+            max_value=20.0,
+            value=10.0,
+            step=1.0,
+            help="Target requests per second. Higher values may trigger rate limiting."
+        )
+        
+        batch_size = st.slider(
+            "Batch Size",
+            min_value=50,
+            max_value=500,
+            value=200,
+            step=50,
+            help="Number of URLs to process in each batch"
+        )
+        
+        # Advanced Settings
+        st.subheader("Advanced Settings")
+        show_advanced = st.checkbox("Show Advanced Settings")
+        
+        advanced_config = {}
+        if show_advanced:
+            st.warning("High concurrency warning: Using high values may impact system performance and target servers.")
             
-            # Test mode checkbox with tooltip
+            advanced_config.update({
+                'screenshot': st.checkbox("Capture Screenshots", value=True),
+                'pdf': st.checkbox("Generate PDFs", value=True),
+                'magic': st.checkbox("Anti-Bot Protection", value=True),
+                'simulate_user': st.checkbox("Simulate User Behavior", value=True)
+            })
+    
+    # Main content
+    # Input form
+    with st.form("crawl_form"):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            url = st.text_input("Enter website URL to crawl")
+            exclusion_patterns = st.text_input(
+                "Exclusion Patterns (comma-separated)", 
+                help="Regex patterns for URLs to exclude (e.g., 'blog/\\d+,/tag/.*')"
+            )
+            output_dir = st.text_input("Output Directory", "/tmp/webscraper")
+        
+        with col2:
             test_mode = st.checkbox(
                 "Test Mode (limit to 15 pages)", 
                 value=True,
-                help="Enable test mode to limit crawling to maximum 15 pages. Useful for testing before full crawl."
+                help="Enable test mode to limit crawling to maximum 15 pages"
             )
+            start_button = st.form_submit_button("Start Crawling")
+    
+    # Start crawling when button is pressed
+    if start_button:
+        try:
+            # Validate URL
+            result = urlparse(url)
+            if not all([result.scheme, result.netloc]):
+                st.error("Invalid URL format")
+                return
             
-            analyze_button = st.form_submit_button("Analyze Sitemap")
-            if analyze_button and url:
-                with st.spinner("Analyzing sitemap..."):
-                    asyncio.run(analyze_sitemap(url))
+            # Create output directory
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            
+            # Display performance warning for high concurrency
+            if max_concurrent > 50:
+                st.warning("""
+                Running with high concurrency (>50). Please monitor:
+                - System memory usage
+                - CPU usage
+                - Network bandwidth
+                - Target server responses
+                """)
+            
+            # Start crawling with configurations
+            with st.spinner("Crawling in progress..."):
+                asyncio.run(start_crawling(
+                    url=url,
+                    output_dir=output_dir,
+                    exclusion_patterns=exclusion_patterns,
+                    browser_type=browser_type,
+                    test_mode=test_mode,
+                    max_concurrent=max_concurrent,
+                    requests_per_second=requests_per_second,
+                    memory_threshold_mb=memory_threshold,
+                    batch_size=batch_size,
+                    advanced_config=advanced_config
+                ))
+            
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+    
+    # Display current status
+    if st.session_state.stats:
+        st.header("Crawling Status")
         
-        # Pattern selection
-        if st.session_state.url_patterns:
-            display_pattern_selection()
-            
-            if st.button("Start Crawling", disabled=not st.session_state.selected_patterns):
-                try:
-                    # Validate URL
-                    result = urlparse(url)
-                    if not all([result.scheme, result.netloc]):
-                        st.error("Invalid URL format")
-                        return
-                    
-                    # Create output directory
-                    Path(output_dir).mkdir(parents=True, exist_ok=True)
-                    
-                    # Start crawling
-                    with st.spinner("Crawling in progress..."):
-                        asyncio.run(start_crawling(url, output_dir, test_mode))
-                    
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+        # Display metrics in multiple rows
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total URLs", st.session_state.stats.get('total_urls', 0))
+            st.metric("Pages Processed", st.session_state.stats.get('pages_count', 0))
+        with col2:
+            st.metric("Successful", st.session_state.stats.get('successful', 0))
+            st.metric("Failed", st.session_state.stats.get('failed', 0))
+        with col3:
+            st.metric("Memory Usage (MB)", f"{st.session_state.stats.get('current_memory_usage', 0):.1f}")
+            success_rate = (st.session_state.stats.get('successful', 0) / 
+                          max(st.session_state.stats.get('total_urls', 1), 1) * 100)
+            st.metric("Success Rate", f"{success_rate:.1f}%")
         
-        # Display current status if crawling is in progress or completed
-        if st.session_state.stats:
-            st.header("Current Crawl Status")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total URLs", st.session_state.stats.get('total_urls', 0))
-            col2.metric("Successful", st.session_state.stats.get('successful', 0))
-            col3.metric("Failed", st.session_state.stats.get('failed', 0))
-            col4.metric("Memory Usage (MB)", f"{st.session_state.stats.get('current_memory_usage', 0):.1f}")
-            
-            # Memory usage chart
+        # Media stats
+        st.subheader("Media Statistics")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Images", st.session_state.stats.get('images_count', 0))
+        col2.metric("Links", st.session_state.stats.get('links_count', 0))
+        col3.metric("PDFs", st.session_state.stats.get('pdfs_count', 0))
+        col4.metric("Screenshots", st.session_state.stats.get('screenshots_count', 0))
+        
+        # Performance charts
+        st.subheader("Performance Metrics")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Memory usage trend
             if st.session_state.memory_usage:
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
@@ -264,17 +301,32 @@ def main():
                     name='Memory Usage (MB)'
                 ))
                 fig.update_layout(
-                    title='Memory Usage Over Time',
-                    xaxis_title='Time',
-                    yaxis_title='Memory Usage (MB)'
+                    title="Memory Usage Trend",
+                    xaxis_title="Time",
+                    yaxis_title="Memory Usage (MB)",
+                    height=400
                 )
                 st.plotly_chart(fig, use_container_width=True)
-            
-            if st.session_state.last_update:
-                st.caption(f"Last updated: {st.session_state.last_update.strftime('%H:%M:%S')}")
-    
-    else:  # History page
-        display_crawl_history()
+        
+        with col2:
+            # Success/Failure pie chart
+            if st.session_state.stats.get('total_urls', 0) > 0:
+                fig = go.Figure(data=[go.Pie(
+                    labels=['Successful', 'Failed'],
+                    values=[
+                        st.session_state.stats.get('successful', 0),
+                        st.session_state.stats.get('failed', 0)
+                    ],
+                    hole=.3
+                )])
+                fig.update_layout(
+                    title="Crawling Results",
+                    height=400
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        if st.session_state.last_update:
+            st.caption(f"Last updated: {st.session_state.last_update.strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
     main()
