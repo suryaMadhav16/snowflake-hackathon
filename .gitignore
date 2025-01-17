@@ -21,3 +21,6 @@ webscraper/utils/__pycache__/history_analyzer.cpython-312.pyc
 webscraper/utils/__pycache__/url_analyzer.cpython-312.pyc
 # All .pyc files must be added to the .gitignore file
 *.pyc
+**/**/__pycache__/
+*.py[cod]
+*$py.class
