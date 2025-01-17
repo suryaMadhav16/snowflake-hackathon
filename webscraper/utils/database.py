@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Any
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -30,47 +31,68 @@ class DatabaseHandler:
         cursor.executescript('''
             CREATE TABLE IF NOT EXISTS pages (
                 id INTEGER PRIMARY KEY,
-                url TEXT UNIQUE,
+                url TEXT UNIQUE NOT NULL,
+                domain TEXT NOT NULL,
+                path TEXT NOT NULL,
                 title TEXT,
                 filepath TEXT,
-                status TEXT,
+                status TEXT NOT NULL,
                 error_message TEXT,
-                word_count INTEGER,
-                crawled_at TIMESTAMP,
-                screenshot_path TEXT,
-                pdf_path TEXT,
-                metadata JSON
+                word_count INTEGER DEFAULT 0,
+                crawled_at TIMESTAMP NOT NULL,
+                last_modified TIMESTAMP,
+                screenshot_path TEXT CHECK (screenshot_path IS NULL OR length(screenshot_path) > 0),
+                pdf_path TEXT CHECK (pdf_path IS NULL OR length(pdf_path) > 0),
+                metadata JSON,
+                processed BOOLEAN DEFAULT FALSE,
+                hash TEXT,
+                UNIQUE(url)
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_pages_domain ON pages(domain);
+            CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
+            CREATE INDEX IF NOT EXISTS idx_pages_processed ON pages(processed);
+            CREATE INDEX IF NOT EXISTS idx_pages_hash ON pages(hash);
             
             CREATE TABLE IF NOT EXISTS images (
                 id INTEGER PRIMARY KEY,
                 page_id INTEGER,
-                url TEXT,
-                filepath TEXT,
+                url TEXT NOT NULL,
+                filepath TEXT NOT NULL,
                 alt_text TEXT,
                 score REAL,
                 size INTEGER,
+                status TEXT NOT NULL DEFAULT 'pending',
+                error_message TEXT,
                 FOREIGN KEY (page_id) REFERENCES pages(id)
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_images_page_id ON images(page_id);
+            CREATE INDEX IF NOT EXISTS idx_images_status ON images(status);
             
             CREATE TABLE IF NOT EXISTS links (
                 id INTEGER PRIMARY KEY,
                 page_id INTEGER,
-                url TEXT,
+                url TEXT NOT NULL,
                 is_internal BOOLEAN,
                 text_content TEXT,
                 metadata JSON,
+                discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                processed BOOLEAN DEFAULT FALSE,
                 FOREIGN KEY (page_id) REFERENCES pages(id)
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_links_page_id ON links(page_id);
+            CREATE INDEX IF NOT EXISTS idx_links_processed ON links(processed);
             
             CREATE TABLE IF NOT EXISTS crawl_stats (
                 id INTEGER PRIMARY KEY,
                 start_time TIMESTAMP,
                 end_time TIMESTAMP,
-                total_urls INTEGER,
-                successful INTEGER,
-                failed INTEGER,
-                current_memory_usage REAL,
+                total_urls INTEGER DEFAULT 0,
+                successful INTEGER DEFAULT 0,
+                failed INTEGER DEFAULT 0,
+                current_memory_usage REAL DEFAULT 0.0,
                 crawler_config JSON,
                 performance_metrics JSON
             );
@@ -78,13 +100,15 @@ class DatabaseHandler:
             CREATE TABLE IF NOT EXISTS performance_metrics (
                 id INTEGER PRIMARY KEY,
                 crawl_id INTEGER,
-                timestamp TIMESTAMP,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 memory_usage REAL,
                 cpu_usage REAL,
                 active_sessions INTEGER,
                 errors_count INTEGER,
                 FOREIGN KEY (crawl_id) REFERENCES crawl_stats(id)
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_performance_crawl_id ON performance_metrics(crawl_id);
         ''')
         self.conn.commit()
 
@@ -125,25 +149,31 @@ class DatabaseHandler:
             filepath = str(kwargs.get('filepath')) if kwargs.get('filepath') else None
             screenshot_path = str(kwargs.get('screenshot_path')) if kwargs.get('screenshot_path') else None
             pdf_path = str(kwargs.get('pdf_path')) if kwargs.get('pdf_path') else None
+            url = kwargs.get('url')
+            parsed_url = urlparse(url)
 
             cursor.execute('''
                 INSERT OR REPLACE INTO pages (
-                    url, title, filepath, status, error_message, 
-                    word_count, crawled_at, screenshot_path, 
-                    pdf_path, metadata
+                    url, domain, path, title, filepath, status, error_message, 
+                    word_count, crawled_at, last_modified, screenshot_path, 
+                    pdf_path, metadata, processed
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                kwargs.get('url'),
+                url,
+                parsed_url.netloc,
+                parsed_url.path,
                 kwargs.get('title'),
                 filepath,
                 kwargs.get('status'),
                 kwargs.get('error_message'),
                 kwargs.get('word_count', 0),
                 datetime.utcnow(),
+                kwargs.get('last_modified'),
                 screenshot_path,
                 pdf_path,
-                json.dumps(kwargs.get('metadata')) if kwargs.get('metadata') else None
+                json.dumps(kwargs.get('metadata')) if kwargs.get('metadata') else None,
+                kwargs.get('processed', True)
             ))
             page_id = cursor.lastrowid
 

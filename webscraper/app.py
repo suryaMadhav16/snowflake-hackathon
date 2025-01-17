@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import logging
 from datetime import datetime
 import json
-from scraper import WebScraper
+from scraper import WebScraper, CrawlerMode
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 st.set_page_config(
-    page_title="Web Scrapper Dashboard",
+    page_title="Web Scraper Dashboard",
     layout="wide",
     menu_items={
         'About': "Web Crawler powered by Crawl4AI"
@@ -47,15 +47,16 @@ async def update_stats(url: str, output_dir: str):
             
             # Get comprehensive stats
             stats = pd.read_sql_query('''
-                SELECT cs.*, 
-                       COUNT(DISTINCT p.id) as pages_count,
-                       COUNT(DISTINCT i.id) as images_count,
-                       COUNT(DISTINCT l.id) as links_count,
-                       SUM(CASE WHEN p.pdf_path IS NOT NULL THEN 1 ELSE 0 END) as pdfs_count,
-                       SUM(CASE WHEN p.screenshot_path IS NOT NULL THEN 1 ELSE 0 END) as screenshots_count
+                SELECT 
+                    cs.*,
+                    COUNT(DISTINCT p.id) as pages_count,
+                    COUNT(DISTINCT i.id) as images_count,
+                    COUNT(DISTINCT l.id) as links_count,
+                    COUNT(DISTINCT CASE WHEN p.pdf_path IS NOT NULL AND p.pdf_path != '' THEN p.id END) as pdfs_count,
+                    COUNT(DISTINCT CASE WHEN p.screenshot_path IS NOT NULL AND p.screenshot_path != '' THEN p.id END) as screenshots_count
                 FROM crawl_stats cs
                 LEFT JOIN pages p ON p.crawled_at BETWEEN cs.start_time AND COALESCE(cs.end_time, datetime('now'))
-                LEFT JOIN images i ON i.page_id = p.id
+                LEFT JOIN images i ON i.page_id = p.id and i.filepath IS NOT NULL
                 LEFT JOIN links l ON l.page_id = p.id
                 WHERE cs.id = (SELECT MAX(id) FROM crawl_stats)
                 GROUP BY cs.id
@@ -110,10 +111,10 @@ async def start_crawling(url: str, output_dir: str, exclusion_patterns: str,
             batch_size=batch_size,
             test_mode=test_mode,
             browser_type=browser_type,
-            enable_screenshots=advanced_config.get('screenshot', True) if advanced_config else True,
-            enable_pdfs=advanced_config.get('pdf', True) if advanced_config else True,
-            enable_magic=advanced_config.get('magic', True) if advanced_config else True,
-            simulate_user=advanced_config.get('simulate_user', True) if advanced_config else True
+            enable_screenshots=advanced_config.get('screenshot', False),  # Default to False
+            enable_pdfs=advanced_config.get('pdf', False),               # Default to False
+            enable_magic=advanced_config.get('magic', True),
+            simulate_user=advanced_config.get('simulate_user', True)
         )
         
         # Start stats update task
@@ -148,53 +149,83 @@ def main():
             help="Select browser engine for crawling"
         )
         
-        # Enhanced parallel processing settings
-        max_concurrent = st.slider(
-            "Max Concurrent Requests",
-            min_value=10,
-            max_value=100,
-            value=50,
-            help="Maximum number of concurrent crawling sessions. Higher values may require more system resources."
+        # Performance mode
+        performance_mode = st.select_slider(
+            "Performance Mode",
+            options=["Low", "Medium", "High", "Extreme"],
+            value="Medium",
+            help="Select crawler performance mode. Higher modes use more system resources."
         )
         
-        memory_threshold = st.slider(
-            "Memory Threshold (MB)",
-            min_value=1000,
-            max_value=8000,
-            value=4000,
-            step=500,
-            help="Maximum memory usage before throttling"
-        )
+        if performance_mode in ["High", "Extreme"]:
+            st.warning("""
+            ⚠️ High/Extreme modes consume significant system resources.
+            Monitor system performance and target server responses.
+            """)
         
-        requests_per_second = st.slider(
-            "Requests Per Second",
-            min_value=1.0,
-            max_value=20.0,
-            value=10.0,
-            step=1.0,
-            help="Target requests per second. Higher values may trigger rate limiting."
-        )
-        
-        batch_size = st.slider(
-            "Batch Size",
-            min_value=50,
-            max_value=500,
-            value=200,
-            step=50,
-            help="Number of URLs to process in each batch"
-        )
+        mode_settings = CrawlerMode.get_mode(performance_mode.lower())
+        max_concurrent = mode_settings['max_concurrent']
+        requests_per_second = mode_settings['requests_per_second']
+        memory_threshold = mode_settings['memory_threshold_mb']
+        batch_size = mode_settings['batch_size']
         
         # Advanced Settings
         st.subheader("Advanced Settings")
         show_advanced = st.checkbox("Show Advanced Settings")
         
-        advanced_config = {}
+        advanced_config = {
+            'screenshot': False,  # Default to False
+            'pdf': False,        # Default to False
+            'magic': True,
+            'simulate_user': True
+        }
+        
         if show_advanced:
-            st.warning("High concurrency warning: Using high values may impact system performance and target servers.")
+            st.info("Current Performance Settings:")
+            st.code(f"""
+            Max Concurrent: {max_concurrent}
+            Requests/Second: {requests_per_second}
+            Memory Limit: {memory_threshold} MB
+            Batch Size: {batch_size}
+            """)
             
+            # Allow override of mode settings
+            if st.checkbox("Override Performance Settings"):
+                max_concurrent = st.slider(
+                    "Max Concurrent Requests",
+                    min_value=1,
+                    max_value=100,
+                    value=max_concurrent
+                )
+                
+                requests_per_second = st.slider(
+                    "Requests Per Second",
+                    min_value=1.0,
+                    max_value=20.0,
+                    value=requests_per_second
+                )
+                
+                memory_threshold = st.slider(
+                    "Memory Threshold (MB)",
+                    min_value=500,
+                    max_value=8000,
+                    value=memory_threshold,
+                    step=500
+                )
+                
+                batch_size = st.slider(
+                    "Batch Size",
+                    min_value=10,
+                    max_value=500,
+                    value=batch_size,
+                    step=10
+                )
+            
+            # Media settings
+            st.subheader("Media Settings")
             advanced_config.update({
-                'screenshot': st.checkbox("Capture Screenshots", value=True),
-                'pdf': st.checkbox("Generate PDFs", value=True),
+                'screenshot': st.checkbox("Capture Screenshots", value=False),
+                'pdf': st.checkbox("Generate PDFs", value=False),
                 'magic': st.checkbox("Anti-Bot Protection", value=True),
                 'simulate_user': st.checkbox("Simulate User Behavior", value=True)
             })
@@ -231,16 +262,6 @@ def main():
             
             # Create output directory
             Path(output_dir).mkdir(parents=True, exist_ok=True)
-            
-            # Display performance warning for high concurrency
-            if max_concurrent > 50:
-                st.warning("""
-                Running with high concurrency (>50). Please monitor:
-                - System memory usage
-                - CPU usage
-                - Network bandwidth
-                - Target server responses
-                """)
             
             # Start crawling with configurations
             with st.spinner("Crawling in progress..."):
