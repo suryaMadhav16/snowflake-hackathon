@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import logging
 from datetime import datetime
 import json
-from scraper import WebScraper, CrawlerMode
+from scraper import WebScraper, CrawlStats, CrawlerMode
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
