@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from typing import List, Dict
+from typing import List, Dict, Optional
 from crawl4ai import CrawlResult
 from urllib.parse import urlparse
 from datetime import datetime

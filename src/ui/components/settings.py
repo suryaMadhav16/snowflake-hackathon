@@ -134,7 +134,13 @@ def render_crawler_settings() -> Dict[str, Any]:
         max_range=0.3,
         semaphore_count=perf_settings["max_concurrent"],
         screenshot=capture_screenshots,
-        pdf=generate_pdfs
+        pdf=generate_pdfs,
+        exclude_external_images=False,
+        image_score_threshold=0,  # Accept all images
+        # Media download settings
+        scan_full_page=True,  # Ensure all images are found
+        wait_for_images=True,  # Wait for images to load
+        delay_before_return_html=2.0  # Extra time for media loading
     )
     
     return {
