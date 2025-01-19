@@ -12,121 +12,10 @@ from crawl4ai import (
     CrawlResult,
     CacheMode
 )
+from ..utils.content_processor import ContentProcessor
+from ..database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
-
-class ContentSaver:
-    """Handles saving of crawled content"""
-    
-    def __init__(self, domain: str):
-        self.domain = domain
-        self.base_dir = Path('/tmp/webscrapper') / domain
-        
-        # Create directories for different content types
-        self.dirs = {
-            'markdown': self.base_dir / 'markdown',
-            'images': self.base_dir / 'images',
-            'pdfs': self.base_dir / 'pdfs',
-            'screenshots': self.base_dir / 'screenshots'
-        }
-        
-        # Ensure all directories exist
-        for directory in self.dirs.values():
-            directory.mkdir(parents=True, exist_ok=True)
-            
-        logger.info(f"Initialized content directories at {self.base_dir}")
-
-    def _decode_base64(self, data: Union[str, bytes]) -> Optional[bytes]:
-        """Safely decode base64 data"""
-        if not data:
-            return None
-            
-        try:
-            if isinstance(data, str):
-                # Remove data URL prefix if present
-                if ',' in data:
-                    data = data.split(',', 1)[1]
-                # Remove any whitespace
-                data = data.strip()
-                return base64.b64decode(data)
-            elif isinstance(data, bytes):
-                return data
-            else:
-                logger.warning(f"Unexpected data type for base64 content: {type(data)}")
-                return None
-        except Exception as e:
-            logger.warning(f"Failed to decode base64 data: {str(e)}")
-            return None
-
-    async def save_content(self, result: CrawlResult) -> Dict[str, Union[Path, List[Path]]]:
-        """Save all content from a crawl result"""
-        saved_paths = {}
-        
-        try:
-            # Log debugging information
-            logger.debug(f"Processing content for URL: {result.url}")
-            logger.debug(f"Available fields: {result.dict().keys()}")
-            
-            # Save markdown content
-            if result.markdown_v2:
-                try:
-                    content = result.markdown_v2.raw_markdown if hasattr(result.markdown_v2, 'raw_markdown') else str(result.markdown_v2)
-                    md_path = self.dirs['markdown'] / f"{abs(hash(result.url))}.md"
-                    md_path.write_text(content, encoding='utf-8')
-                    saved_paths['markdown'] = md_path.relative_to(self.base_dir)
-                    logger.debug(f"Saved markdown content to {md_path}")
-                except Exception as e:
-                    logger.error(f"Failed to save markdown for {result.url}: {str(e)}")
-
-            # Save images from media dictionary
-            if result.media and isinstance(result.media, dict) and 'images' in result.media:
-                image_paths = []
-                for idx, img in enumerate(result.media['images']):
-                    try:
-                        if isinstance(img, dict) and 'data' in img and img.get('src'):
-                            img_data = self._decode_base64(img['data'])
-                            if img_data:
-                                img_path = self.dirs['images'] / f"{abs(hash(str(img['src'])))}.png"
-                                img_path.write_bytes(img_data)
-                                image_paths.append(img_path.relative_to(self.base_dir))
-                                logger.debug(f"Saved image {idx + 1} to {img_path}")
-                    except Exception as e:
-                        logger.warning(f"Failed to save image {idx + 1} from {result.url}: {str(e)}")
-                if image_paths:
-                    saved_paths['images'] = image_paths
-
-            # Save PDF content
-            if result.pdf:
-                try:
-                    if isinstance(result.pdf, bytes):
-                        pdf_path = self.dirs['pdfs'] / f"{abs(hash(result.url))}.pdf"
-                        pdf_path.write_bytes(result.pdf)
-                        saved_paths['pdf'] = pdf_path.relative_to(self.base_dir)
-                        logger.debug(f"Saved PDF to {pdf_path}")
-                except Exception as e:
-                    logger.error(f"Failed to save PDF for {result.url}: {str(e)}")
-
-            # Save screenshot with improved error handling
-            if result.screenshot is not None:
-                try:
-                    logger.debug(f"Screenshot type: {type(result.screenshot)}")
-                    screenshot_bytes = self._decode_base64(result.screenshot)
-                    
-                    if screenshot_bytes:
-                        ss_path = self.dirs['screenshots'] / f"{abs(hash(result.url))}.png"
-                        ss_path.write_bytes(screenshot_bytes)
-                        saved_paths['screenshot'] = ss_path.relative_to(self.base_dir)
-                        logger.debug(f"Saved screenshot to {ss_path}")
-                    else:
-                        logger.warning(f"No valid screenshot data for {result.url}")
-                except Exception as e:
-                    logger.error(f"Failed to save screenshot for {result.url}: {str(e)}", exc_info=True)
-
-            return saved_paths
-            
-        except Exception as e:
-            logger.error(f"Error saving content for {result.url}: {str(e)}", exc_info=True)
-            return saved_paths
 
 class BatchCrawler:
     """Handles batched crawling operations with resource management"""
@@ -135,7 +24,8 @@ class BatchCrawler:
         self, 
         browser_config: BrowserConfig = None,
         crawl_config: CrawlerRunConfig = None,
-        base_url: str = None
+        base_url: str = None,
+        db: DatabaseManager = None
     ):
         self.browser_config = browser_config or BrowserConfig(
             headless=True,
@@ -153,8 +43,16 @@ class BatchCrawler:
             max_range=0.3,
             semaphore_count=5,
             screenshot=True,  # Enable screenshots
-            wait_until="networkidle"  # Wait for network to be idle
+            wait_until="networkidle",  # Wait for network to be idle
+            pdf=True  # Enable PDF saving
         )
+        
+        # Initialize database and content processor
+        self.db = db or DatabaseManager()
+        self.content_processor = None
+        if base_url:
+            domain = urlparse(base_url).netloc
+            self.content_processor = ContentProcessor(domain, self.db)
         
         self.metrics = {
             'successful': 0,
@@ -173,12 +71,6 @@ class BatchCrawler:
                 'screenshot': 0
             }
         }
-        
-        # Initialize content saver if base_url provided
-        self.content_saver = None
-        if base_url:
-            domain = urlparse(base_url).netloc
-            self.content_saver = ContentSaver(domain)
     
     async def process_batch(
         self, 
@@ -204,10 +96,10 @@ class BatchCrawler:
         self.metrics['total_batches'] = total_batches
         self.metrics['current_batch'] = 0
         
-        # Initialize content saver if needed
-        if not self.content_saver and urls:
+        # Initialize content processor if needed
+        if not self.content_processor and urls:
             domain = urlparse(urls[0]).netloc
-            self.content_saver = ContentSaver(domain)
+            self.content_processor = ContentProcessor(domain, self.db)
         
         # Process in batches
         for i in range(0, len(urls), batch_size):
@@ -227,22 +119,23 @@ class BatchCrawler:
                         try:
                             if isinstance(result, CrawlResult):
                                 logger.debug(f"Processing result for URL: {result.url}")
-                                logger.debug(f"Result success: {result.success}")
                                 
                                 if result.success:
                                     self.metrics['successful'] += 1
-                                    if self.content_saver:
-                                        saved_paths = await self.content_saver.save_content(result)
-                                        # Update content saving metrics
-                                        # Update metrics safely
-                                        for content_type, paths in saved_paths.items():
-                                            if content_type not in self.metrics['saved_content']:
-                                                logger.warning(f"Unexpected content type in metrics: {content_type}")
-                                                continue
-                                            if isinstance(paths, list):
-                                                self.metrics['saved_content'][content_type] += len(paths)
+                                    
+                                    # Save result to database first
+                                    await self.db.save_results([result])
+                                    
+                                    # Save content to filesystem if processor exists
+                                    if self.content_processor:
+                                        saved_files = await self.content_processor.save_content(result)
+                                        
+                                        # Update metrics
+                                        for content_type, files in saved_files.items():
+                                            if content_type in self.metrics['saved_content']:
+                                                self.metrics['saved_content'][content_type] += len(files)
                                             else:
-                                                self.metrics['saved_content'][content_type] += 1
+                                                logger.warning(f"Unknown content type in metrics: {content_type}")
                                 else:
                                     self.metrics['failed'] += 1
                                     logger.warning(f"Crawl failed for {result.url}: {result.error_message}")

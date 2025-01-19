@@ -17,7 +17,11 @@ class URLManager:
             simulate_user=True,
             scan_full_page=True,
             wait_until="networkidle",
-            delay_before_return_html=2.0
+            delay_before_return_html=2.0,
+            # Disable media saving during discovery
+            screenshot=False,
+            pdf=False,
+            exclude_external_images=True
         )
         
         if discovery_config:

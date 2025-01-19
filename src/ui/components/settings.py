@@ -106,14 +106,19 @@ def render_crawler_settings() -> Dict[str, Any]:
     
     # Media Settings
     st.sidebar.subheader("Media Handling")
+    save_images = st.sidebar.checkbox(
+        "Save Images",
+        value=True,
+        help="Download and save images from pages"
+    )
     capture_screenshots = st.sidebar.checkbox(
         "Capture Screenshots",
-        value=False,
+        value=True,
         help="Save screenshots of crawled pages"
     )
     generate_pdfs = st.sidebar.checkbox(
         "Generate PDFs",
-        value=False,
+        value=True,
         help="Save PDFs of crawled pages"
     )
     
@@ -133,14 +138,17 @@ def render_crawler_settings() -> Dict[str, Any]:
         mean_delay=perf_settings["delay"],
         max_range=0.3,
         semaphore_count=perf_settings["max_concurrent"],
+        
+        # Media handling settings
         screenshot=capture_screenshots,
         pdf=generate_pdfs,
-        exclude_external_images=False,
+        exclude_external_images=not save_images,
         image_score_threshold=0,  # Accept all images
+        
         # Media download settings
         scan_full_page=True,  # Ensure all images are found
-        wait_for_images=True,  # Wait for images to load
-        delay_before_return_html=2.0  # Extra time for media loading
+        wait_for_images=save_images,  # Wait for images if saving enabled
+        delay_before_return_html=2.0 if save_images else 0.5  # Extra time for loading
     )
     
     return {

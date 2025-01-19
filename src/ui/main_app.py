@@ -178,7 +178,7 @@ class CrawlerApp:
                     if st.button("Clear and Start Over"):
                         st.session_state.discovered_urls = None
                         st.session_state.url_graph = None
-                        st.experimental_rerun()
+                        st.rerun()
                 else:
                     st.info("Processing in progress...")
         
