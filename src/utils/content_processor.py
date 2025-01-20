@@ -5,7 +5,7 @@ import mimetypes
 from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
-from ..database.db_manager import DatabaseManager
+from database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 

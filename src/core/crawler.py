@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import base64
-from typing import List, Dict, AsyncGenerator, Union, Optional
+import re
+from typing import List, Dict, AsyncGenerator, Union, Optional, Set
 from datetime import datetime
 from urllib.parse import urlparse
 from pathlib import Path
@@ -12,8 +13,8 @@ from crawl4ai import (
     CrawlResult,
     CacheMode
 )
-from ..utils.content_processor import ContentProcessor
-from ..database.db_manager import DatabaseManager
+from utils.content_processor import ContentProcessor
+from database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,8 @@ class BatchCrawler:
         browser_config: BrowserConfig = None,
         crawl_config: CrawlerRunConfig = None,
         base_url: str = None,
-        db: DatabaseManager = None
+        db: DatabaseManager = None,
+        excluded_patterns: List[str] = None
     ):
         self.browser_config = browser_config or BrowserConfig(
             headless=True,
@@ -42,10 +44,20 @@ class BatchCrawler:
             mean_delay=1.0,
             max_range=0.3,
             semaphore_count=5,
-            screenshot=True,  # Enable screenshots
-            wait_until="networkidle",  # Wait for network to be idle
-            pdf=True  # Enable PDF saving
+            screenshot=True,
+            wait_until="networkidle",
+            pdf=True
         )
+        
+        # Compile excluded patterns
+        self.excluded_patterns = []
+        if excluded_patterns:
+            for pattern in excluded_patterns:
+                try:
+                    self.excluded_patterns.append(re.compile(pattern))
+                    logger.info(f"Added exclusion pattern: {pattern}")
+                except re.error as e:
+                    logger.error(f"Invalid regex pattern '{pattern}': {str(e)}")
         
         # Initialize database and content processor
         self.db = db or DatabaseManager()
@@ -57,6 +69,7 @@ class BatchCrawler:
         self.metrics = {
             'successful': 0,
             'failed': 0,
+            'skipped': 0,
             'start_time': None,
             'end_time': None,
             'current_batch': 0,
@@ -72,21 +85,49 @@ class BatchCrawler:
             }
         }
     
+    def should_skip_url(self, url: str) -> bool:
+        """Check if URL matches any exclusion patterns"""
+        if not self.excluded_patterns:
+            return False
+            
+        try:
+            parsed = urlparse(url)
+            path = parsed.path.strip('/')
+            
+            for pattern in self.excluded_patterns:
+                if pattern.search(path):
+                    logger.info(f"Skipping URL due to exclusion pattern '{pattern.pattern}': {url}")
+                    self.metrics['skipped'] += 1
+                    return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error checking URL exclusion for {url}: {str(e)}")
+            return False
+    
+    def filter_batch(self, urls: List[str]) -> List[str]:
+        """Filter out URLs that match exclusion patterns"""
+        if not self.excluded_patterns:
+            return urls
+            
+        filtered = []
+        for url in urls:
+            if not self.should_skip_url(url):
+                filtered.append(url)
+        
+        if len(urls) != len(filtered):
+            logger.info(f"Filtered out {len(urls) - len(filtered)} URLs based on exclusion patterns")
+            
+        return filtered
+    
     async def process_batch(
         self, 
         urls: List[str], 
         batch_size: int = 10
     ) -> AsyncGenerator[List[CrawlResult], None]:
-        """
-        Process URLs in batches
-        
-        Args:
-            urls: List of URLs to process
-            batch_size: Size of each batch
-            
-        Yields:
-            List of CrawlResult objects for each batch
-        """
+        """Process URLs in batches"""
+        # Filter URLs before processing
+        urls = self.filter_batch(urls)
         total_urls = len(urls)
         total_batches = (total_urls - 1) // batch_size + 1
         
@@ -114,28 +155,21 @@ class BatchCrawler:
                         config=self.crawl_config
                     )
                     
-                    # Process and save content for successful results
+                    # Process results
+                    processed_results = []
                     for result in results:
                         try:
                             if isinstance(result, CrawlResult):
-                                logger.debug(f"Processing result for URL: {result.url}")
-                                
                                 if result.success:
                                     self.metrics['successful'] += 1
-                                    
-                                    # Save result to database first
                                     await self.db.save_results([result])
                                     
-                                    # Save content to filesystem if processor exists
                                     if self.content_processor:
                                         saved_files = await self.content_processor.save_content(result)
-                                        
-                                        # Update metrics
                                         for content_type, files in saved_files.items():
                                             if content_type in self.metrics['saved_content']:
                                                 self.metrics['saved_content'][content_type] += len(files)
-                                            else:
-                                                logger.warning(f"Unknown content type in metrics: {content_type}")
+                                    processed_results.append(result)
                                 else:
                                     self.metrics['failed'] += 1
                                     logger.warning(f"Crawl failed for {result.url}: {result.error_message}")
@@ -144,7 +178,7 @@ class BatchCrawler:
                                 self.metrics['failed'] += 1
                                 
                         except Exception as e:
-                            logger.error(f"Error processing result for {getattr(result, 'url', 'unknown')}: {str(e)}", exc_info=True)
+                            logger.error(f"Error processing result for {getattr(result, 'url', 'unknown')}: {str(e)}")
                             self.metrics['failed'] += 1
                     
                     batch_duration = (datetime.now() - batch_start).total_seconds()
@@ -153,14 +187,14 @@ class BatchCrawler:
                         f"in {batch_duration:.2f}s"
                     )
                     
-                    # Update timing metrics
+                    # Update metrics
                     self.metrics['end_time'] = datetime.now()
                     duration = (self.metrics['end_time'] - self.metrics['start_time']).total_seconds()
                     self.metrics['duration'] = duration
                     total_processed = self.metrics['successful'] + self.metrics['failed']
                     self.metrics['urls_per_second'] = total_processed / duration if duration > 0 else 0
                     
-                    yield results
+                    yield processed_results
                     
             except Exception as e:
                 logger.error(f"Error processing batch: {str(e)}", exc_info=True)
@@ -173,7 +207,13 @@ class BatchCrawler:
         total_processed = self.metrics['successful'] + self.metrics['failed']
         self.metrics['urls_per_second'] = total_processed / duration if duration > 0 else 0
         
-        # Log content saving summary
+        # Log final stats
+        logger.info(
+            f"Crawling complete - Processed: {total_processed}, "
+            f"Successful: {self.metrics['successful']}, "
+            f"Failed: {self.metrics['failed']}, "
+            f"Skipped: {self.metrics['skipped']}"
+        )
         logger.info(f"Content saving summary: {self.metrics['saved_content']}")
     
     def get_metrics(self) -> Dict:
