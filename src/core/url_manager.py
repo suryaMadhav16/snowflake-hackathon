@@ -61,6 +61,53 @@ class URLManager:
         }
         logger.info("URLManager initialized successfully")
         
+    async def discover_single_url(self, url: str) -> List[str]:
+        """Quick URL discovery for single page mode - no sitemap or deep crawling"""
+        self.performance_metrics['start_time'] = datetime.now()
+        logger.info(f"Starting single URL validation for: {url}")
+        
+        try:
+            normalized_url = self._normalize_url(url)
+            if not normalized_url:
+                raise ValueError("Invalid URL format")
+                
+            self.base_domain = urlparse(normalized_url).netloc
+            if not self.base_domain:
+                raise ValueError(f"Could not extract domain from {url}")
+                
+            logger.info(f"Validated URL: {normalized_url}")
+            
+            # Initialize session to check URL accessibility
+            timeout = aiohttp.ClientTimeout(total=10)
+            connector = aiohttp.TCPConnector(limit=1, force_close=True)
+            
+            async with aiohttp.ClientSession(
+                timeout=timeout,
+                connector=connector,
+                headers={'User-Agent': 'Mozilla/5.0 (compatible; SinglePageBot/1.0)'}
+            ) as session:
+                content, _, error = await self._fetch_with_aiohttp(normalized_url, session)
+                if error:
+                    raise ValueError(f"URL not accessible: {error}")
+            
+            # Set up minimal graph structure
+            self.discovered_urls = {normalized_url}
+            self.url_graph = {normalized_url: {'same_domain': [], 'external': []}}
+            
+            # Update metrics
+            self.performance_metrics['end_time'] = datetime.now()
+            duration = (self.performance_metrics['end_time'] - self.performance_metrics['start_time']).total_seconds()
+            
+            logger.info("Single URL Validation Complete:")
+            logger.info(f"URL: {normalized_url}")
+            logger.info(f"Time: {duration:.2f}s")
+            
+            return [normalized_url]
+            
+        except Exception as e:
+            logger.error(f"Single URL validation failed for {url}: {str(e)}", exc_info=True)
+            return []
+        
     async def _fetch_with_aiohttp(self, url: str, session: aiohttp.ClientSession) -> Tuple[str, bool, str]:
         """Fetch URL content using aiohttp with rate limiting"""
         domain = urlparse(url).netloc
@@ -261,13 +308,16 @@ class URLManager:
             links = soup.find_all('a', href=True)
             logger.debug(f"Found {len(links)} raw links in {url}")
             
+            # Process and deduplicate URLs
+            seen_urls = set()
             for link in links:
                 href = link['href']
-                if href:
+                if href and href.strip() and not href.startswith(('javascript:', 'mailto:', 'tel:')):
                     full_url = urljoin(url, href)
                     normalized = self._normalize_url(full_url)
                     if normalized:
-                        urls.add(normalized)
+                        seen_urls.add(normalized)
+            urls.update(seen_urls)
                         
             duration = time.time() - start_time
             logger.info(f"Extracted {len(urls)} unique URLs from {url} - Time: {duration:.2f}s")

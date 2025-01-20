@@ -38,25 +38,35 @@ class CrawlerApp:
             st.session_state.is_processing = False
         if 'url_graph' not in st.session_state:
             st.session_state.url_graph = None
+        if 'crawl_mode' not in st.session_state:
+            st.session_state.crawl_mode = 'full'
     
-    async def discover_urls(self, url: str, settings: Dict) -> List[str]:
-        """Discover URLs from starting point"""
+    async def discover_urls(self, url: str, settings: Dict, mode: str = 'full') -> List[str]:
+        """Discover URLs based on selected mode"""
         url_manager = URLManager(settings['crawler_config'])
         st.session_state.is_discovering = True
         
         try:
-            with st.spinner("Discovering URLs..."):
-                urls = await url_manager.discover_urls(
-                    url,
-                    max_depth=settings['max_depth']
-                )
+            status_message = "Discovering URLs..." if mode == 'full' else "Validating URL..."
+            with st.spinner(status_message):
+                if mode == 'full':
+                    logger.info(f"Starting full site crawl for {url}")
+                    urls = await url_manager.discover_urls(
+                        url,
+                        max_depth=settings['max_depth']
+                    )
+                else:
+                    logger.info(f"Starting single page validation for {url}")
+                    urls = await url_manager.discover_single_url(url)
+                    
                 st.session_state.discovered_urls = urls
                 st.session_state.url_graph = url_manager.url_graph
                 return urls
                 
         except Exception as e:
-            st.error(f"Error during URL discovery: {str(e)}")
-            logger.error(f"URL discovery error: {str(e)}", exc_info=True)
+            error_type = "discovery" if mode == 'full' else "validation"
+            st.error(f"Error during URL {error_type}: {str(e)}")
+            logger.error(f"URL {error_type} error: {str(e)}", exc_info=True)
             return []
             
         finally:
@@ -65,6 +75,7 @@ class CrawlerApp:
     async def process_urls(self, urls: List[str], settings: Dict):
         """Process discovered URLs in batches"""
         st.session_state.is_processing = True
+        mode = st.session_state.crawl_mode
         
         try:
             crawler = BatchCrawler(
@@ -74,10 +85,12 @@ class CrawlerApp:
             
             total_urls = len(urls)
             processed = 0
-            batch_size = settings['batch_size']
+            batch_size = 1 if mode == 'single' else settings['batch_size']
             
             progress_bar = st.progress(0)
             status_text = st.empty()
+            
+            action = "Scraping" if mode == 'single' else "Processing"
             
             async for batch_results in crawler.process_batch(urls, batch_size):
                 # Update progress
@@ -86,7 +99,10 @@ class CrawlerApp:
                 progress_bar.progress(progress)
                 
                 # Update status
-                status_text.text(f"Processed {processed}/{total_urls} URLs")
+                status_text.text(
+                    f"{action} page..." if mode == 'single' 
+                    else f"Processed {processed}/{total_urls} URLs"
+                )
                 
                 # Update metrics and display
                 current_metrics = crawler.get_metrics()
@@ -105,8 +121,9 @@ class CrawlerApp:
                 )
                 
         except Exception as e:
-            st.error(f"Error during crawling: {str(e)}")
-            logger.error(f"Crawling error: {str(e)}", exc_info=True)
+            action = "scraping" if mode == 'single' else "crawling"
+            st.error(f"Error during {action}: {str(e)}")
+            logger.error(f"{action.capitalize()} error: {str(e)}", exc_info=True)
             self.state.log_error(str(e))
             
         finally:
@@ -124,39 +141,64 @@ class CrawlerApp:
         settings = render_crawler_settings()
         self.state.save_settings(settings)
         
-        # URL input and validation
-        url = st.text_input("Enter website URL to crawl")
+        # URL input and crawl mode selection
+        url = st.text_input("Enter website URL")
+        
+        mode = st.radio(
+            "Select Crawl Mode",
+            ["Full Website Crawl", "Single Page"],
+            help=("Full Website Crawl will discover and process all pages. "
+                  "Single Page will only process the given URL.")
+        )
+        
+        st.session_state.crawl_mode = 'full' if mode == "Full Website Crawl" else 'single'
         
         # Create two columns for main content
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            # URL Discovery Phase
+            # URL Discovery/Validation Phase
             if url and not st.session_state.discovered_urls:
+                action = "Crawl Site" if st.session_state.crawl_mode == 'full' else "Scrape Page"
                 start_button = st.button(
-                    "Start Crawling",
-                    disabled=st.session_state.is_discovering
+                    action,
+                    disabled=st.session_state.is_discovering,
+                    key='start_discovery_button'
                 )
                 
                 if start_button:
                     self.monitor.clear_metrics()
                     self.results.clear_results()
                     
-                    discovered_urls = await self.discover_urls(url, settings)
+                    discovered_urls = await self.discover_urls(
+                        url, 
+                        settings,
+                        mode=st.session_state.crawl_mode
+                    )
                     
                     if discovered_urls:
-                        st.success(f"Discovered {len(discovered_urls)} URLs")
-                        
-                        # Show URL tree
-                        self.url_tree.render_url_tree(
-                            discovered_urls, 
-                            st.session_state.url_graph
-                        )
+                        if st.session_state.crawl_mode == 'full':
+                            st.success(f"Discovered {len(discovered_urls)} URLs")
+                            # Show URL tree for full crawl
+                            self.url_tree.render_url_tree(
+                                discovered_urls, 
+                                st.session_state.url_graph
+                            )
+                        else:
+                            st.success("URL validated successfully")
                     else:
-                        st.warning("No URLs discovered. Please check the URL and try again.")
+                        st.warning(
+                            "No URLs discovered. Please check the URL and try again."
+                            if st.session_state.crawl_mode == 'full'
+                            else "Invalid URL. Please check and try again."
+                        )
             
-            # URL Tree Display (after discovery)
-            elif st.session_state.discovered_urls and not st.session_state.is_processing:
+            # URL Tree Display (after discovery, only for full mode)
+            elif (
+                st.session_state.discovered_urls and 
+                not st.session_state.is_processing and 
+                st.session_state.crawl_mode == 'full'
+            ):
                 self.url_tree.render_url_tree(
                     st.session_state.discovered_urls,
                     st.session_state.url_graph
@@ -168,19 +210,21 @@ class CrawlerApp:
                 st.subheader("Processing Controls")
                 
                 if not st.session_state.is_processing:
-                    if st.button("Start Processing"):
+                    action = "Start Processing" if st.session_state.crawl_mode == 'full' else "Scrape Page"
+                    if st.button(action, key='start_processing_button'):
                         self.state.start_crawling(st.session_state.discovered_urls)
                         await self.process_urls(
                             st.session_state.discovered_urls,
                             settings
                         )
                         
-                    if st.button("Clear and Start Over"):
+                    if st.button("Clear and Start Over", key='clear_button'):
                         st.session_state.discovered_urls = None
                         st.session_state.url_graph = None
                         st.rerun()
                 else:
-                    st.info("Processing in progress...")
+                    status = "Processing" if st.session_state.crawl_mode == 'full' else "Scraping"
+                    st.info(f"{status} in progress...")
         
         # Show error log if exists
         errors = self.state.get_error_log()
@@ -191,7 +235,7 @@ class CrawlerApp:
                         f"{error['timestamp'].strftime('%H:%M:%S')}: {error['error']}"
                         + (f" ({error['url']})" if error['url'] else "")
                     )
-                if st.button("Clear Error Log"):
+                if st.button("Clear Error Log", key='clear_error_log_button'):
                     self.state.clear_error_log()
 
 def main():
