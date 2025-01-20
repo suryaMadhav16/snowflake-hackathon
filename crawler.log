@@ -1,0 +1,433 @@
+2025-01-19 20:05:36,449 - numexpr.utils - INFO - NumExpr defaulting to 8 threads.
+2025-01-19 20:05:37,252 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:05:40,184 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:05:41,460 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:05:41,472 - src.core.url_manager - INFO - Starting URL discovery from https://docs.snowflake.com/ (domain: docs.snowflake.com)
+2025-01-19 20:11:35,185 - numexpr.utils - INFO - NumExpr defaulting to 8 threads.
+2025-01-19 20:11:35,866 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:11:48,748 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:11:48,942 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:11:49,705 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:11:50,473 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:11:52,240 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:11:52,248 - src.core.url_manager - INFO - Initializing URLManager
+2025-01-19 20:11:52,248 - src.core.url_manager - INFO - URLManager initialized successfully
+2025-01-19 20:11:52,250 - src.core.url_manager - INFO - Starting URL discovery from https://crawl4ai.com/mkdocs/ with max_depth=3
+2025-01-19 20:11:52,251 - src.core.url_manager - INFO - Using base domain: crawl4ai.com
+2025-01-19 20:11:52,251 - src.core.url_manager - INFO - Starting sitemap discovery for https://crawl4ai.com/mkdocs
+2025-01-19 20:11:52,251 - src.core.url_manager - INFO - Checking robots.txt at https://crawl4ai.com/robots.txt
+2025-01-19 20:11:52,607 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/robots.txt - HTTP 404 - Time: 0.36s
+2025-01-19 20:11:52,608 - src.core.url_manager - WARNING - Failed to fetch robots.txt: HTTP 404
+2025-01-19 20:11:52,608 - src.core.url_manager - INFO - Processing sitemap: https://crawl4ai.com/sitemap.xml
+2025-01-19 20:11:52,905 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/sitemap.xml - HTTP 404 - Time: 0.30s
+2025-01-19 20:11:52,906 - src.core.url_manager - WARNING - Failed to fetch sitemap https://crawl4ai.com/sitemap.xml: HTTP 404
+2025-01-19 20:11:52,906 - src.core.url_manager - INFO - Processing sitemap: https://crawl4ai.com/sitemap_index.xml
+2025-01-19 20:11:53,213 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/sitemap_index.xml - HTTP 404 - Time: 0.31s
+2025-01-19 20:11:53,214 - src.core.url_manager - WARNING - Failed to fetch sitemap https://crawl4ai.com/sitemap_index.xml: HTTP 404
+2025-01-19 20:11:53,214 - src.core.url_manager - INFO - Processing sitemap: https://crawl4ai.com/sitemap-index.xml
+2025-01-19 20:11:53,525 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/sitemap-index.xml - HTTP 404 - Time: 0.31s
+2025-01-19 20:11:53,526 - src.core.url_manager - WARNING - Failed to fetch sitemap https://crawl4ai.com/sitemap-index.xml: HTTP 404
+2025-01-19 20:11:53,526 - src.core.url_manager - INFO - Processing sitemap: https://crawl4ai.com/sitemaps/sitemap.xml
+2025-01-19 20:11:53,815 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/sitemaps/sitemap.xml - HTTP 404 - Time: 0.29s
+2025-01-19 20:11:53,816 - src.core.url_manager - WARNING - Failed to fetch sitemap https://crawl4ai.com/sitemaps/sitemap.xml: HTTP 404
+2025-01-19 20:11:53,816 - src.core.url_manager - INFO - Processing sitemap: https://crawl4ai.com/sitemap/sitemap.xml
+2025-01-19 20:11:54,123 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/sitemap/sitemap.xml - HTTP 404 - Time: 0.31s
+2025-01-19 20:11:54,124 - src.core.url_manager - WARNING - Failed to fetch sitemap https://crawl4ai.com/sitemap/sitemap.xml: HTTP 404
+2025-01-19 20:11:54,124 - src.core.url_manager - INFO - Sitemap discovery completed - Found 0 URLs - Time: 1.87s
+2025-01-19 20:11:54,125 - src.core.url_manager - INFO - Found 0 URLs from sitemaps
+2025-01-19 20:11:54,125 - src.core.url_manager - INFO - Processing depth 1/3 with 1 URLs
+2025-01-19 20:11:54,125 - src.core.url_manager - INFO - Processing batch of 1 URLs at depth 0
+2025-01-19 20:11:54,734 - src.core.url_manager - INFO - Successfully fetched https://crawl4ai.com/mkdocs - Type: HTML - Time: 0.61s
+2025-01-19 20:11:54,746 - src.core.url_manager - INFO - Extracted 48 unique URLs from https://crawl4ai.com/mkdocs - Time: 0.01s
+2025-01-19 20:11:54,747 - src.core.url_manager - INFO - Processed https://crawl4ai.com/mkdocs - Found 37 same-domain URLs (36 new) - Time: 0.62s
+2025-01-19 20:11:54,747 - src.core.url_manager - INFO - Completed batch processing - Found 36 new URLs - Time: 0.62s
+2025-01-19 20:11:54,747 - src.core.url_manager - INFO - Completed depth 1/3 - Total discovered: 37 URLs - New in this depth: 36
+2025-01-19 20:11:54,747 - src.core.url_manager - INFO - Processing depth 2/3 with 36 URLs
+2025-01-19 20:11:54,747 - src.core.url_manager - INFO - Processing batch of 36 URLs at depth 1
+2025-01-19 20:11:54,905 - src.core.url_manager - ERROR - Error fetching https://old.docs.crawl4ai.com/: Cannot connect to host old.docs.crawl4ai.com:443 ssl:default [nodename nor servname provided, or not known] - Time: 0.16s
+2025-01-19 20:11:54,905 - src.core.url_manager - WARNING - Failed to fetch https://old.docs.crawl4ai.com/: Cannot connect to host old.docs.crawl4ai.com:443 ssl:default [nodename nor servname provided, or not known]
+2025-01-19 20:11:55,064 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/chunking - HTTP 404 - Time: 0.32s
+2025-01-19 20:11:55,065 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/chunking: HTTP 404
+2025-01-19 20:11:55,076 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/lazy-loading - HTTP 404 - Time: 0.33s
+2025-01-19 20:11:55,076 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/lazy-loading: HTTP 404
+2025-01-19 20:11:55,229 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/ - Type: HTML - Time: 0.48s
+2025-01-19 20:11:55,258 - src.core.url_manager - INFO - Extracted 46 unique URLs from https://docs.crawl4ai.com/ - Time: 0.03s
+2025-01-19 20:11:55,259 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/ - Found 35 same-domain URLs (33 new) - Time: 0.51s
+2025-01-19 20:11:55,377 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/ssl-certificate - HTTP 404 - Time: 0.63s
+2025-01-19 20:11:55,378 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/ssl-certificate: HTTP 404
+2025-01-19 20:11:55,387 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/content-selection - HTTP 404 - Time: 0.64s
+2025-01-19 20:11:55,388 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/content-selection: HTTP 404
+2025-01-19 20:11:55,683 - src.core.url_manager - INFO - Successfully fetched https://crawl4ai.com/ - Type: HTML - Time: 0.93s
+2025-01-19 20:11:55,716 - src.core.url_manager - INFO - Extracted 47 unique URLs from https://crawl4ai.com/ - Time: 0.03s
+2025-01-19 20:11:55,717 - src.core.url_manager - INFO - Processed https://crawl4ai.com/ - Found 36 same-domain URLs (0 new) - Time: 0.97s
+2025-01-19 20:11:55,718 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/strategies - HTTP 404 - Time: 0.97s
+2025-01-19 20:11:55,718 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/strategies: HTTP 404
+2025-01-19 20:11:55,718 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/no-llm-strategies - HTTP 404 - Time: 0.97s
+2025-01-19 20:11:55,719 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/no-llm-strategies: HTTP 404
+2025-01-19 20:11:56,028 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/multi-url-crawling - HTTP 404 - Time: 1.28s
+2025-01-19 20:11:56,029 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/multi-url-crawling: HTTP 404
+2025-01-19 20:11:56,041 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/file-downloading - HTTP 404 - Time: 1.29s
+2025-01-19 20:11:56,042 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/file-downloading: HTTP 404
+2025-01-19 20:11:56,057 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/blog - HTTP 404 - Time: 1.31s
+2025-01-19 20:11:56,058 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/blog: HTTP 404
+2025-01-19 20:11:56,337 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/crawl-result - HTTP 404 - Time: 1.59s
+2025-01-19 20:11:56,338 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/crawl-result: HTTP 404
+2025-01-19 20:11:56,345 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/crawl-dispatcher - HTTP 404 - Time: 1.60s
+2025-01-19 20:11:56,346 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/crawl-dispatcher: HTTP 404
+2025-01-19 20:11:56,358 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/cache-modes - HTTP 404 - Time: 1.61s
+2025-01-19 20:11:56,359 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/cache-modes: HTTP 404
+2025-01-19 20:11:56,657 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/link-media - HTTP 404 - Time: 1.91s
+2025-01-19 20:11:56,658 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/link-media: HTTP 404
+2025-01-19 20:11:56,668 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/identity-based-crawling - HTTP 404 - Time: 1.92s
+2025-01-19 20:11:56,669 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/identity-based-crawling: HTTP 404
+2025-01-19 20:11:56,678 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/proxy-security - HTTP 404 - Time: 1.93s
+2025-01-19 20:11:56,679 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/proxy-security: HTTP 404
+2025-01-19 20:11:56,968 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/simple-crawling - HTTP 404 - Time: 2.22s
+2025-01-19 20:11:56,968 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/simple-crawling: HTTP 404
+2025-01-19 20:11:56,992 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/session-management - HTTP 404 - Time: 2.24s
+2025-01-19 20:11:56,992 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/session-management: HTTP 404
+2025-01-19 20:11:57,013 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/page-interaction - HTTP 404 - Time: 2.26s
+2025-01-19 20:11:57,013 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/page-interaction: HTTP 404
+2025-01-19 20:11:57,268 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/markdown-generation - HTTP 404 - Time: 2.52s
+2025-01-19 20:11:57,268 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/markdown-generation: HTTP 404
+2025-01-19 20:11:57,301 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/hooks-auth - HTTP 404 - Time: 2.55s
+2025-01-19 20:11:57,301 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/hooks-auth: HTTP 404
+2025-01-19 20:11:57,320 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/llm-strategies - HTTP 404 - Time: 2.57s
+2025-01-19 20:11:57,320 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/llm-strategies: HTTP 404
+2025-01-19 20:11:57,570 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/crawler-result - HTTP 404 - Time: 2.82s
+2025-01-19 20:11:57,570 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/crawler-result: HTTP 404
+2025-01-19 20:11:57,622 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/parameters - HTTP 404 - Time: 2.87s
+2025-01-19 20:11:57,622 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/parameters: HTTP 404
+2025-01-19 20:11:57,638 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/docker-deploymeny - HTTP 404 - Time: 2.89s
+2025-01-19 20:11:57,638 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/docker-deploymeny: HTTP 404
+2025-01-19 20:11:57,870 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/browser-crawler-config - HTTP 404 - Time: 3.12s
+2025-01-19 20:11:57,871 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/browser-crawler-config: HTTP 404
+2025-01-19 20:11:57,922 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/local-files - HTTP 404 - Time: 3.17s
+2025-01-19 20:11:57,923 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/local-files: HTTP 404
+2025-01-19 20:11:57,931 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/clustring-strategies - HTTP 404 - Time: 3.18s
+2025-01-19 20:11:57,931 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/extraction/clustring-strategies: HTTP 404
+2025-01-19 20:11:58,184 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/arun - HTTP 404 - Time: 3.44s
+2025-01-19 20:11:58,184 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/arun: HTTP 404
+2025-01-19 20:11:58,232 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/async-webcrawler - HTTP 404 - Time: 3.48s
+2025-01-19 20:11:58,233 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/api/async-webcrawler: HTTP 404
+2025-01-19 20:11:58,244 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/fit-markdown - HTTP 404 - Time: 3.50s
+2025-01-19 20:11:58,244 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/fit-markdown: HTTP 404
+2025-01-19 20:11:58,493 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/advanced-features - HTTP 404 - Time: 3.74s
+2025-01-19 20:11:58,494 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/advanced/advanced-features: HTTP 404
+2025-01-19 20:11:58,545 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/installation - HTTP 404 - Time: 3.80s
+2025-01-19 20:11:58,546 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/installation: HTTP 404
+2025-01-19 20:11:58,553 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/quickstart - HTTP 404 - Time: 3.80s
+2025-01-19 20:11:58,554 - src.core.url_manager - WARNING - Failed to fetch https://crawl4ai.com/core/quickstart: HTTP 404
+2025-01-19 20:11:58,554 - src.core.url_manager - INFO - Completed batch processing - Found 33 new URLs - Time: 3.81s
+2025-01-19 20:11:58,554 - src.core.url_manager - INFO - Completed depth 2/3 - Total discovered: 70 URLs - New in this depth: 33
+2025-01-19 20:11:58,554 - src.core.url_manager - INFO - Processing depth 3/3 with 33 URLs
+2025-01-19 20:11:58,554 - src.core.url_manager - INFO - Processing batch of 33 URLs at depth 2
+2025-01-19 20:11:59,173 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/api/strategies - Type: HTML - Time: 0.62s
+2025-01-19 20:11:59,227 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/api/strategies - Time: 0.05s
+2025-01-19 20:11:59,227 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/api/strategies - Found 34 same-domain URLs (4 new) - Time: 0.67s
+2025-01-19 20:11:59,229 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/api/async-webcrawler - Type: HTML - Time: 0.67s
+2025-01-19 20:11:59,255 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/api/async-webcrawler - Time: 0.03s
+2025-01-19 20:11:59,255 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/api/async-webcrawler - Found 34 same-domain URLs (4 new) - Time: 0.70s
+2025-01-19 20:11:59,269 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/extraction/llm-strategies - Type: HTML - Time: 0.71s
+2025-01-19 20:11:59,294 - src.core.url_manager - INFO - Extracted 38 unique URLs from https://docs.crawl4ai.com/extraction/llm-strategies - Time: 0.02s
+2025-01-19 20:11:59,294 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/extraction/llm-strategies - Found 34 same-domain URLs (3 new) - Time: 0.74s
+2025-01-19 20:11:59,851 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/extraction/clustring-strategies - Type: HTML - Time: 1.29s
+2025-01-19 20:11:59,899 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/extraction/clustring-strategies - Time: 0.05s
+2025-01-19 20:11:59,899 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/extraction/clustring-strategies - Found 34 same-domain URLs (3 new) - Time: 1.34s
+2025-01-19 20:11:59,900 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/simple-crawling - Type: HTML - Time: 1.34s
+2025-01-19 20:11:59,920 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/simple-crawling - Time: 0.02s
+2025-01-19 20:11:59,921 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/simple-crawling - Found 34 same-domain URLs (12 new) - Time: 1.36s
+2025-01-19 20:11:59,923 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/advanced-features - Type: HTML - Time: 1.37s
+2025-01-19 20:11:59,955 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/advanced-features - Time: 0.03s
+2025-01-19 20:11:59,955 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/advanced-features - Found 34 same-domain URLs (9 new) - Time: 1.40s
+2025-01-19 20:12:00,487 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/installation - Type: HTML - Time: 1.93s
+2025-01-19 20:12:00,519 - src.core.url_manager - INFO - Extracted 38 unique URLs from https://docs.crawl4ai.com/core/installation - Time: 0.03s
+2025-01-19 20:12:00,520 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/installation - Found 34 same-domain URLs (12 new) - Time: 1.96s
+2025-01-19 20:12:00,521 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/api/arun - Type: HTML - Time: 1.96s
+2025-01-19 20:12:00,551 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/api/arun - Time: 0.03s
+2025-01-19 20:12:00,552 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/api/arun - Found 34 same-domain URLs (4 new) - Time: 1.99s
+2025-01-19 20:12:00,562 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/file-downloading - Type: HTML - Time: 2.01s
+2025-01-19 20:12:00,577 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/file-downloading - Time: 0.01s
+2025-01-19 20:12:00,577 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/file-downloading - Found 34 same-domain URLs (9 new) - Time: 2.02s
+2025-01-19 20:12:01,159 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/ssl-certificate - Type: HTML - Time: 2.60s
+2025-01-19 20:12:01,200 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/ssl-certificate - Time: 0.04s
+2025-01-19 20:12:01,201 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/ssl-certificate - Found 34 same-domain URLs (9 new) - Time: 2.64s
+2025-01-19 20:12:01,202 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/extraction/chunking - Type: HTML - Time: 2.65s
+2025-01-19 20:12:01,224 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/extraction/chunking - Time: 0.02s
+2025-01-19 20:12:01,224 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/extraction/chunking - Found 34 same-domain URLs (3 new) - Time: 2.67s
+2025-01-19 20:12:01,234 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/markdown-generation - Type: HTML - Time: 2.68s
+2025-01-19 20:12:01,309 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/markdown-generation - Time: 0.08s
+2025-01-19 20:12:01,309 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/markdown-generation - Found 34 same-domain URLs (12 new) - Time: 2.75s
+2025-01-19 20:12:01,914 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/link-media - Type: HTML - Time: 3.36s
+2025-01-19 20:12:01,968 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/link-media - Time: 0.05s
+2025-01-19 20:12:01,968 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/link-media - Found 34 same-domain URLs (12 new) - Time: 3.41s
+2025-01-19 20:12:01,969 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/browser-crawler-config - Type: HTML - Time: 3.41s
+2025-01-19 20:12:01,989 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/browser-crawler-config - Time: 0.02s
+2025-01-19 20:12:01,990 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/browser-crawler-config - Found 34 same-domain URLs (12 new) - Time: 3.43s
+2025-01-19 20:12:01,990 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/content-selection - Type: HTML - Time: 3.43s
+2025-01-19 20:12:02,022 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/content-selection - Time: 0.03s
+2025-01-19 20:12:02,022 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/content-selection - Found 34 same-domain URLs (12 new) - Time: 3.47s
+2025-01-19 20:12:02,564 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/api/parameters - Type: HTML - Time: 4.01s
+2025-01-19 20:12:02,616 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/api/parameters - Time: 0.05s
+2025-01-19 20:12:02,617 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/api/parameters - Found 34 same-domain URLs (4 new) - Time: 4.06s
+2025-01-19 20:12:02,618 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/fit-markdown - Type: HTML - Time: 4.06s
+2025-01-19 20:12:02,638 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/fit-markdown - Time: 0.02s
+2025-01-19 20:12:02,638 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/fit-markdown - Found 34 same-domain URLs (12 new) - Time: 4.08s
+2025-01-19 20:12:02,638 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/cache-modes - Type: HTML - Time: 4.08s
+2025-01-19 20:12:02,648 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/cache-modes - Time: 0.01s
+2025-01-19 20:12:02,649 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/cache-modes - Found 34 same-domain URLs (12 new) - Time: 4.09s
+2025-01-19 20:12:03,218 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/local-files - Type: HTML - Time: 4.66s
+2025-01-19 20:12:03,268 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/local-files - Time: 0.05s
+2025-01-19 20:12:03,269 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/local-files - Found 34 same-domain URLs (12 new) - Time: 4.71s
+2025-01-19 20:12:03,340 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/quickstart - Type: HTML - Time: 4.78s
+2025-01-19 20:12:03,380 - src.core.url_manager - INFO - Extracted 38 unique URLs from https://docs.crawl4ai.com/core/quickstart - Time: 0.04s
+2025-01-19 20:12:03,380 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/quickstart - Found 35 same-domain URLs (13 new) - Time: 4.82s
+2025-01-19 20:12:03,381 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/docker-deploymeny - Type: HTML - Time: 4.82s
+2025-01-19 20:12:03,428 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/docker-deploymeny - Time: 0.05s
+2025-01-19 20:12:03,428 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/docker-deploymeny - Found 34 same-domain URLs (12 new) - Time: 4.87s
+2025-01-19 20:12:03,983 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/blog - Type: HTML - Time: 5.43s
+2025-01-19 20:12:04,006 - src.core.url_manager - INFO - Extracted 42 unique URLs from https://docs.crawl4ai.com/blog - Time: 0.02s
+2025-01-19 20:12:04,007 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/blog - Found 37 same-domain URLs (3 new) - Time: 5.45s
+2025-01-19 20:12:04,013 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/api/crawl-result - Type: HTML - Time: 5.46s
+2025-01-19 20:12:04,052 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/api/crawl-result - Time: 0.04s
+2025-01-19 20:12:04,053 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/api/crawl-result - Found 34 same-domain URLs (4 new) - Time: 5.50s
+2025-01-19 20:12:04,117 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/multi-url-crawling - Type: HTML - Time: 5.56s
+2025-01-19 20:12:04,195 - src.core.url_manager - INFO - Extracted 39 unique URLs from https://docs.crawl4ai.com/advanced/multi-url-crawling - Time: 0.08s
+2025-01-19 20:12:04,196 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/multi-url-crawling - Found 34 same-domain URLs (9 new) - Time: 5.64s
+2025-01-19 20:12:04,634 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/identity-based-crawling - Type: HTML - Time: 6.08s
+2025-01-19 20:12:04,676 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/identity-based-crawling - Time: 0.04s
+2025-01-19 20:12:04,676 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/identity-based-crawling - Found 34 same-domain URLs (9 new) - Time: 6.12s
+2025-01-19 20:12:04,726 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/hooks-auth - Type: HTML - Time: 6.17s
+2025-01-19 20:12:04,756 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/hooks-auth - Time: 0.03s
+2025-01-19 20:12:04,756 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/hooks-auth - Found 34 same-domain URLs (9 new) - Time: 6.20s
+2025-01-19 20:12:04,893 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/extraction/no-llm-strategies - Type: HTML - Time: 6.34s
+2025-01-19 20:12:04,945 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/extraction/no-llm-strategies - Time: 0.05s
+2025-01-19 20:12:04,945 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/extraction/no-llm-strategies - Found 34 same-domain URLs (3 new) - Time: 6.39s
+2025-01-19 20:12:05,272 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/crawler-result - Type: HTML - Time: 6.71s
+2025-01-19 20:12:05,324 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/crawler-result - Time: 0.05s
+2025-01-19 20:12:05,324 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/crawler-result - Found 34 same-domain URLs (12 new) - Time: 6.77s
+2025-01-19 20:12:05,366 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/crawl-dispatcher - Type: HTML - Time: 6.81s
+2025-01-19 20:12:05,373 - src.core.url_manager - INFO - Extracted 38 unique URLs from https://docs.crawl4ai.com/advanced/crawl-dispatcher - Time: 0.01s
+2025-01-19 20:12:05,373 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/crawl-dispatcher - Found 34 same-domain URLs (9 new) - Time: 6.82s
+2025-01-19 20:12:05,549 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/session-management - Type: HTML - Time: 6.99s
+2025-01-19 20:12:05,602 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/session-management - Time: 0.05s
+2025-01-19 20:12:05,603 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/session-management - Found 34 same-domain URLs (9 new) - Time: 7.05s
+2025-01-19 20:12:05,914 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/lazy-loading - Type: HTML - Time: 7.36s
+2025-01-19 20:12:05,944 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/lazy-loading - Time: 0.03s
+2025-01-19 20:12:05,944 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/lazy-loading - Found 34 same-domain URLs (9 new) - Time: 7.39s
+2025-01-19 20:12:06,117 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/core/page-interaction - Type: HTML - Time: 7.56s
+2025-01-19 20:12:06,167 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/core/page-interaction - Time: 0.05s
+2025-01-19 20:12:06,168 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/core/page-interaction - Found 34 same-domain URLs (12 new) - Time: 7.61s
+2025-01-19 20:12:06,211 - src.core.url_manager - INFO - Successfully fetched https://docs.crawl4ai.com/advanced/proxy-security - Type: HTML - Time: 7.65s
+2025-01-19 20:12:06,222 - src.core.url_manager - INFO - Extracted 37 unique URLs from https://docs.crawl4ai.com/advanced/proxy-security - Time: 0.01s
+2025-01-19 20:12:06,222 - src.core.url_manager - INFO - Processed https://docs.crawl4ai.com/advanced/proxy-security - Found 34 same-domain URLs (9 new) - Time: 7.67s
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Completed batch processing - Found 36 new URLs - Time: 7.67s
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Completed depth 3/3 - Total discovered: 106 URLs - New in this depth: 36
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - URL Discovery Complete - Final Statistics:
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Total Time: 13.97s
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Total URLs Discovered: 106
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Total URLs Processed: 36
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Average Fetch Time: 2.81s
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Total Requests: 75
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Failed Requests: 1
+2025-01-19 20:12:06,223 - src.core.url_manager - INFO - Timeouts: 0
+2025-01-19 20:12:43,787 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:13:14,087 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:13:18,172 - src.database.db_manager - INFO - Database initialized successfully
+2025-01-19 20:13:18,204 - src.core.crawler - INFO - Starting batch processing of 106 URLs
+2025-01-19 20:13:18,207 - src.utils.content_processor - INFO - Initialized content directories at /tmp/webscrapper/docs.crawl4ai.com
+2025-01-19 20:13:22,534 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/file-downloading
+2025-01-19 20:13:22,539 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/api/strategies
+2025-01-19 20:13:22,541 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/session-management
+2025-01-19 20:13:22,547 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/advanced-features
+2025-01-19 20:13:22,550 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/extraction/chunking
+2025-01-19 20:13:22,551 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/extraction/chunking
+2025-01-19 20:13:22,555 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/
+2025-01-19 20:13:22,658 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/
+2025-01-19 20:13:22,661 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/ssl-certificate
+2025-01-19 20:13:22,662 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/ssl-certificate
+2025-01-19 20:13:22,665 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/api/strategies
+2025-01-19 20:13:22,666 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/api/strategies
+2025-01-19 20:13:22,668 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/extraction/no-llm-strategies
+2025-01-19 20:13:22,669 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/extraction/no-llm-strategies
+2025-01-19 20:13:22,671 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/fit-markdown
+2025-01-19 20:13:22,671 - src.core.crawler - INFO - Processed batch 1/11 in 4.46s
+2025-01-19 20:13:26,570 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/installation
+2025-01-19 20:13:26,695 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/installation
+2025-01-19 20:13:26,699 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/file-downloading
+2025-01-19 20:13:26,700 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/file-downloading
+2025-01-19 20:13:26,706 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/api/arun
+2025-01-19 20:13:26,923 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/api/arun
+2025-01-19 20:13:26,928 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/simple-crawling
+2025-01-19 20:13:26,934 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/markdown-generation
+2025-01-19 20:13:27,180 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/markdown-generation
+2025-01-19 20:13:27,181 - src.core.crawler - WARNING - Crawl failed for https://old.docs.crawl4ai.com/: Unexpected error in _crawl_web at line 1205 in _crawl_web (../../../../opt/anaconda3/lib/python3.12/site-packages/crawl4ai/async_crawler_strategy.py):
+Error: Failed on navigating ACS-GOTO:
+Page.goto: net::ERR_NAME_NOT_RESOLVED at https://old.docs.crawl4ai.com/
+Call log:
+  - navigating to "https://old.docs.crawl4ai.com/", waiting until "domcontentloaded"
+
+
+Code context:
+1200   
+1201                       response = await page.goto(
+1202                           url, wait_until=config.wait_until, timeout=config.page_timeout
+1203                       )
+1204                   except Error as e:
+1205 →                     raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
+1206   
+1207                   await self.execute_hook("after_goto", page, context=context, url=url, response=response)
+1208   
+1209                   if response is None:
+1210                       status_code = 200
+2025-01-19 20:13:27,189 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/ssl-certificate
+2025-01-19 20:13:27,340 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/advanced/ssl-certificate
+2025-01-19 20:13:27,345 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/extraction/chunking
+2025-01-19 20:13:27,478 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/extraction/chunking
+2025-01-19 20:13:27,483 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/releases/0.4.2
+2025-01-19 20:13:27,485 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/docker-deploymeny
+2025-01-19 20:13:27,485 - src.core.crawler - INFO - Processed batch 2/11 in 4.10s
+2025-01-19 20:13:31,341 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced-features
+2025-01-19 20:13:31,344 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/api/crawl-result
+2025-01-19 20:13:31,346 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/api/crawl-result
+2025-01-19 20:13:31,348 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/quickstart
+2025-01-19 20:13:31,352 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/content-selection
+2025-01-19 20:13:31,355 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/page-interaction
+2025-01-19 20:13:31,357 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/link-media
+2025-01-19 20:13:31,358 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/link-media
+2025-01-19 20:13:31,360 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/session-management
+2025-01-19 20:13:31,362 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/session-management
+2025-01-19 20:13:31,364 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/markdown-generation
+2025-01-19 20:13:31,365 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/markdown-generation
+2025-01-19 20:13:31,368 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/fit-markdown
+2025-01-19 20:13:31,660 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/fit-markdown
+2025-01-19 20:13:31,664 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/cache-modes
+2025-01-19 20:13:31,752 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/cache-modes
+2025-01-19 20:13:31,753 - src.core.crawler - INFO - Processed batch 3/11 in 4.11s
+2025-01-19 20:13:35,491 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/llm-strategies
+2025-01-19 20:13:35,493 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/multi-url-crawling
+2025-01-19 20:13:35,496 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/async-webcrawler
+2025-01-19 20:13:35,497 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/installation
+2025-01-19 20:13:35,500 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/extraction/llm-strategies
+2025-01-19 20:13:35,501 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/extraction/llm-strategies
+2025-01-19 20:13:35,503 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/releases/0.4.0
+2025-01-19 20:13:35,505 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/crawler-result
+2025-01-19 20:13:35,506 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/crawler-result
+2025-01-19 20:13:35,510 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/quickstart
+2025-01-19 20:13:35,761 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/quickstart
+2025-01-19 20:13:35,766 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/releases/0.4.1
+2025-01-19 20:13:35,769 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/cache-modes
+2025-01-19 20:13:35,769 - src.core.crawler - INFO - Processed batch 4/11 in 3.90s
+2025-01-19 20:13:38,819 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/strategies
+2025-01-19 20:13:38,823 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/extraction/clustring-strategies
+2025-01-19 20:13:38,824 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/extraction/clustring-strategies
+2025-01-19 20:13:38,826 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/content-selection
+2025-01-19 20:13:38,828 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/api/arun
+2025-01-19 20:13:38,831 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/api/arun
+2025-01-19 20:13:38,833 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/crawler-result
+2025-01-19 20:13:38,834 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/proxy-security
+2025-01-19 20:13:38,837 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/link-media
+2025-01-19 20:13:38,839 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/api/async-webcrawler
+2025-01-19 20:13:38,840 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/api/async-webcrawler
+2025-01-19 20:13:38,843 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/fit-markdown
+2025-01-19 20:13:38,844 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/fit-markdown
+2025-01-19 20:13:38,847 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/lazy-loading
+2025-01-19 20:13:38,847 - src.core.crawler - INFO - Processed batch 5/11 in 2.97s
+2025-01-19 20:13:41,934 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/installation
+2025-01-19 20:13:41,935 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/installation
+2025-01-19 20:13:41,938 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/quickstart
+2025-01-19 20:13:41,939 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/quickstart
+2025-01-19 20:13:41,941 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/lazy-loading
+2025-01-19 20:13:41,942 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/lazy-loading
+2025-01-19 20:13:41,946 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/mkdocs
+2025-01-19 20:13:42,049 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/mkdocs
+2025-01-19 20:13:42,057 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/extraction/llm-strategies
+2025-01-19 20:13:42,311 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/extraction/llm-strategies
+2025-01-19 20:13:42,319 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/api/async-webcrawler
+2025-01-19 20:13:42,544 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/api/async-webcrawler
+2025-01-19 20:13:42,549 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/identity-based-crawling
+2025-01-19 20:13:42,554 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/extraction/clustring-strategies
+2025-01-19 20:13:42,751 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/extraction/clustring-strategies
+2025-01-19 20:13:42,754 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/ssl-certificate
+2025-01-19 20:13:42,756 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/crawl-dispatcher
+2025-01-19 20:13:42,756 - src.core.crawler - INFO - Processed batch 6/11 in 3.81s
+2025-01-19 20:13:46,233 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/lazy-loading
+2025-01-19 20:13:46,235 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/content-selection
+2025-01-19 20:13:46,237 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/content-selection
+2025-01-19 20:13:46,241 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/simple-crawling
+2025-01-19 20:13:46,367 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/simple-crawling
+2025-01-19 20:13:46,370 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/clustring-strategies
+2025-01-19 20:13:46,372 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/browser-crawler-config
+2025-01-19 20:13:46,373 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/crawl-result
+2025-01-19 20:13:46,376 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/file-downloading
+2025-01-19 20:13:46,379 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/blog
+2025-01-19 20:13:46,380 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/blog
+2025-01-19 20:13:46,382 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/multi-url-crawling
+2025-01-19 20:13:46,383 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/multi-url-crawling
+2025-01-19 20:13:46,385 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/parameters
+2025-01-19 20:13:46,385 - src.core.crawler - INFO - Processed batch 7/11 in 3.51s
+2025-01-19 20:13:49,447 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/crawl-dispatcher
+2025-01-19 20:13:49,449 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/crawl-dispatcher
+2025-01-19 20:13:49,452 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/link-media
+2025-01-19 20:13:49,705 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/link-media
+2025-01-19 20:13:49,710 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/cache-modes
+2025-01-19 20:13:49,711 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/cache-modes
+2025-01-19 20:13:49,713 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/no-llm-strategies
+2025-01-19 20:13:49,716 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/browser-crawler-config
+2025-01-19 20:13:49,720 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/api/parameters
+2025-01-19 20:13:49,930 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/api/parameters
+2025-01-19 20:13:49,935 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core
+2025-01-19 20:13:49,938 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/proxy-security
+2025-01-19 20:13:49,939 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/proxy-security
+2025-01-19 20:13:49,941 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/simple-crawling
+2025-01-19 20:13:49,942 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/simple-crawling
+2025-01-19 20:13:49,944 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/page-interaction
+2025-01-19 20:13:49,945 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/page-interaction
+2025-01-19 20:13:49,945 - src.core.crawler - INFO - Processed batch 8/11 in 3.46s
+2025-01-19 20:13:52,972 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/
+2025-01-19 20:13:53,078 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/
+2025-01-19 20:13:53,082 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/hooks-auth
+2025-01-19 20:13:53,083 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/hooks-auth
+2025-01-19 20:13:53,087 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/local-files
+2025-01-19 20:13:53,089 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/hooks-auth
+2025-01-19 20:13:53,091 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/api/parameters
+2025-01-19 20:13:53,092 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/api/parameters
+2025-01-19 20:13:53,094 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/docker-deploymeny
+2025-01-19 20:13:53,095 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/docker-deploymeny
+2025-01-19 20:13:53,097 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/browser-crawler-config
+2025-01-19 20:13:53,098 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/browser-crawler-config
+2025-01-19 20:13:53,102 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/docker-deploymeny
+2025-01-19 20:13:53,350 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/docker-deploymeny
+2025-01-19 20:13:53,359 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/api/crawl-result
+2025-01-19 20:13:53,361 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/blog
+2025-01-19 20:13:53,433 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/blog
+2025-01-19 20:13:53,434 - src.core.crawler - INFO - Processed batch 9/11 in 3.37s
+2025-01-19 20:13:56,734 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/multi-url-crawling
+2025-01-19 20:13:56,937 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/advanced/multi-url-crawling
+2025-01-19 20:13:56,941 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/markdown-generation
+2025-01-19 20:13:56,944 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/core/local-files
+2025-01-19 20:13:56,945 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/core/local-files
+2025-01-19 20:13:56,950 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/identity-based-crawling
+2025-01-19 20:13:57,107 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/advanced/identity-based-crawling
+2025-01-19 20:13:57,110 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/arun
+2025-01-19 20:13:57,115 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/hooks-auth
+2025-01-19 20:13:57,310 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/advanced/hooks-auth
+2025-01-19 20:13:57,319 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/extraction/no-llm-strategies
+2025-01-19 20:13:57,323 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/chunking
+2025-01-19 20:13:57,327 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/crawler-result
+2025-01-19 20:13:57,520 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/crawler-result
+2025-01-19 20:13:57,523 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/local-files
+2025-01-19 20:13:57,523 - src.core.crawler - INFO - Processed batch 10/11 in 3.99s
+2025-01-19 20:14:00,702 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/crawl-dispatcher
+2025-01-19 20:14:00,757 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/advanced/crawl-dispatcher
+2025-01-19 20:14:00,761 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/session-management
+2025-01-19 20:14:00,764 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/advanced-features
+2025-01-19 20:14:00,765 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/advanced-features
+2025-01-19 20:14:00,768 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/core/page-interaction
+2025-01-19 20:14:01,016 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/core/page-interaction
+2025-01-19 20:14:01,020 - src.utils.content_processor - INFO - Saved markdown for https://crawl4ai.com/advanced/identity-based-crawling
+2025-01-19 20:14:01,022 - src.utils.content_processor - INFO - Saved screenshot for https://crawl4ai.com/advanced/identity-based-crawling
+2025-01-19 20:14:01,024 - src.utils.content_processor - INFO - Saved markdown for https://docs.crawl4ai.com/advanced/proxy-security
+2025-01-19 20:14:01,093 - src.utils.content_processor - INFO - Saved screenshot for https://docs.crawl4ai.com/advanced/proxy-security
+2025-01-19 20:14:01,094 - src.core.crawler - INFO - Processed batch 11/11 in 3.40s
+2025-01-19 20:14:01,190 - src.core.crawler - INFO - Content saving summary: {'markdown': 105, 'images': 0, 'pdf': 0, 'screenshot': 59}
