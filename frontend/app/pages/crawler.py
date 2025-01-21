@@ -27,17 +27,29 @@ async def discover_urls(url: str, settings: dict, progress: ProgressMonitor) -> 
             
             # Wait for discovery to complete or timeout
             start_time = time.time()
-            timeout = 60  # 1 minute timeout
+            discovery_timeout = 1000  # 3 minutes timeout for discovery
+            poll_interval = 2  # Poll every 2 seconds
+            error_count = 0
+            max_errors = 3  # Maximum consecutive errors before warning
             
-            while not progress.is_complete() and (time.time() - start_time) < timeout:
+            while not progress.is_complete() and (time.time() - start_time) < discovery_timeout:
                 try:
                     status = await api_client.get_status(task_id)
-                    progress.update_from_status(status)
-                    if progress.is_complete():
-                        break
+                    if status:
+                        progress.update_from_status(status)
+                        error_count = 0  # Reset error count on successful status
+                        if progress.is_complete():
+                            break
+                    else:
+                        error_count += 1
+                        if error_count >= max_errors:
+                            st.warning("⚠️ Having trouble getting status updates...")
                 except Exception as e:
                     logger.error(f"Error checking status: {str(e)}")
-                await asyncio.sleep(1)
+                    error_count += 1
+                    if error_count >= max_errors:
+                        st.warning("⚠️ Having trouble getting status updates...")
+                await asyncio.sleep(poll_interval)
             
             if not progress.is_complete():
                 st.warning("⏳ URL discovery is taking longer than expected...")

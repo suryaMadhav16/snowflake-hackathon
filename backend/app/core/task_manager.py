@@ -1,12 +1,13 @@
 import asyncio
 import uuid
 import logging
+import json
 from typing import Dict, List, Optional, Set
 from datetime import datetime
 from core.url_discovery import URLDiscoveryManager
 from database.snowflake_manager import SnowflakeManager
 from core.storage_manager import StorageManager
-from api.schemas import CrawlerSettings, CrawlTask, DiscoveryTask
+from api.schemas import CrawlerSettings, CrawlTask, DiscoveryTask, TaskMetrics, URLGraph
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,20 @@ class TaskManager:
         
         self.discovery_tasks[task_id] = task
         
+        # Save task to database
+        await self.snowflake.save_task({
+            'task_id': task.task_id,
+            'task_type': 'discovery',
+            'status': task.status,
+            'progress': task.progress,
+            'settings': task.settings.dict() if task.settings else {},
+            'error': task.error,
+            'current_url': task.start_url,
+            'urls': [task.start_url],
+            'created_at': task.created_at,
+            'updated_at': task.updated_at
+        })
+        
         # Start discovery in background
         asyncio.create_task(self._run_discovery(task))
         
@@ -63,6 +78,20 @@ class TaskManager:
             task.status = "running"
             task.updated_at = datetime.now()
             
+            # Update task in database
+            await self.snowflake.save_task({
+                'task_id': task.task_id,
+                'task_type': 'discovery',
+                'status': task.status,
+                'progress': task.progress,
+                'settings': task.settings.dict() if task.settings else {},
+                'error': task.error,
+                'current_url': task.start_url,
+                'urls': [task.start_url],
+                'created_at': task.created_at,
+                'updated_at': task.updated_at
+            })
+            
             # Create URL discovery manager
             discovery_manager = URLDiscoveryManager(
                 max_depth=task.settings.max_depth,
@@ -70,9 +99,34 @@ class TaskManager:
             )
             
             # Run discovery
+            start_time = datetime.now()
+            
+            async def update_progress(current_url: str, progress: float):
+                task.current_url = current_url
+                task.progress = progress
+                elapsed_time = (datetime.now() - start_time).total_seconds()
+                
+                await self.snowflake.save_task({
+                    'task_id': task.task_id,
+                    'task_type': 'discovery',
+                    'status': task.status,
+                    'progress': task.progress,
+                    'settings': task.settings.dict() if task.settings else {},
+                    'error': task.error,
+                    'current_url': current_url,
+                    'urls': [task.start_url],
+                    'created_at': task.created_at,
+                    'updated_at': datetime.now(),
+                    'metrics': {
+                        'elapsed_time': elapsed_time,
+                        'current_url': current_url
+                    }
+                })
+
             result = await discovery_manager.discover_urls(
                 task.start_url,
-                task.mode
+                task.mode,
+                progress_callback=update_progress
             )
             
             # Update task with results
@@ -96,6 +150,8 @@ class TaskManager:
                     "created_at": task.created_at,
                     "completed_at": task.updated_at
                 })
+                r = await self.snowflake.get_discovery_result(task.task_id)
+                logger.info(f"======Discovery result======: {r}")
             except Exception as e:
                 logger.error(f"Error saving discovery results: {str(e)}")
             
@@ -171,8 +227,7 @@ class TaskManager:
     
     async def get_task(self, task_id: str) -> Optional[CrawlTask]:
         """Get task by ID from memory or database"""
-        # First check memory
-        logger.info(f"Checking task {task_id} in memory---------")
+        # First check memory        
         task = self.active_tasks.get(task_id)
         if task:
             return task
@@ -180,18 +235,45 @@ class TaskManager:
         # Then check database
         db_task = await self.snowflake.get_task(task_id)
         if db_task:
-            task = CrawlTask(
-                task_id=db_task['task_id'],
-                urls=db_task['urls'],
-                settings=db_task['settings'],
-                status=db_task['status'],
-                progress=db_task['progress'],
-                metrics=db_task['metrics'],
-                error=db_task['error'],
-                created_at=db_task['created_at'],
-                updated_at=db_task['updated_at']
-            )
-            return task
+            try:
+                # Case insensitive access
+                def get_field(field_name: str):
+                    # Try lowercase first
+                    if field_name in db_task:
+                        return db_task[field_name]
+                    # Then try uppercase
+                    return db_task[field_name.upper()]
+
+                # Parse URLs from JSON string
+                urls_str = get_field('urls')
+                urls = json.loads(urls_str) if isinstance(urls_str, str) else urls_str
+
+                # Parse settings from JSON string
+                settings_str = get_field('settings')
+                settings_dict = json.loads(settings_str) if isinstance(settings_str, str) else settings_str
+                settings = CrawlerSettings(**settings_dict)
+
+                # Parse metrics from JSON string
+                metrics_str = get_field('metrics')
+                metrics_dict = json.loads(metrics_str) if isinstance(metrics_str, str) else metrics_str
+                metrics = TaskMetrics(**metrics_dict)
+
+                task = CrawlTask(
+                    task_id=get_field('task_id'),
+                    urls=urls,
+                    settings=settings,
+                    status=get_field('status'),
+                    progress=get_field('progress'),
+                    metrics=metrics,
+                    error=get_field('error'),
+                    created_at=get_field('created_at'),
+                    updated_at=get_field('updated_at')
+                )
+                return task
+            except json.JSONDecodeError as e:
+                logger.error(f"Error decoding JSON from database: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error creating task from database: {str(e)}")
 
         return None
     
@@ -204,25 +286,54 @@ class TaskManager:
 
         # Then check database
         db_task = await self.snowflake.get_task(task_id)
-        if db_task and db_task['task_type'] == 'discovery':
-            discovery_result = await self.snowflake.get_discovery_result(task_id)
-            if discovery_result:
-                task = DiscoveryTask(
-                    task_id=db_task['task_id'],
-                    start_url=discovery_result['start_url'],
-                    mode=db_task.get('settings', {}).get('mode', 'full'),
-                    settings=db_task['settings'],
-                    status=db_task['status'],
-                    progress=db_task['progress'],
-                    discovered_urls=discovery_result['discovered_urls'],
-                    total_urls=discovery_result['total_urls'],
-                    max_depth=discovery_result['max_depth'],
-                    url_graph=discovery_result['url_graph'],
-                    error=db_task['error'],
-                    created_at=db_task['created_at'],
-                    updated_at=db_task['updated_at']
-                )
-                return task
+        if db_task and db_task.get('TASK_TYPE', '').lower() == 'discovery':
+            try:
+                # Case insensitive access
+                def get_field(field_name: str, task_dict=db_task):
+                    # Try lowercase first
+                    if field_name in task_dict:
+                        return task_dict[field_name]
+                    # Then try uppercase
+                    return task_dict[field_name.upper()]
+
+                discovery_result = await self.snowflake.get_discovery_result(task_id)
+                if discovery_result:
+                    # Parse settings
+                    settings_str = get_field('settings')
+                    settings_dict = json.loads(settings_str) if isinstance(settings_str, str) else settings_str
+                    settings = CrawlerSettings(**settings_dict)
+
+                    # Parse discovered URLs
+                    urls_str = get_field('discovered_urls', discovery_result)
+                    discovered_urls = json.loads(urls_str) if isinstance(urls_str, str) else urls_str
+
+                    # Parse URL graph
+                    graph_str = get_field('url_graph', discovery_result)
+                    graph_dict = json.loads(graph_str) if isinstance(graph_str, str) else graph_str
+                    url_graph = URLGraph(**graph_dict) if graph_dict else None
+
+                    task = DiscoveryTask(
+                        task_id=get_field('task_id'),
+                        start_url=get_field('start_url', discovery_result),
+                        mode=settings_dict.get('mode', 'full'),
+                        settings=settings,
+                        status=get_field('status'),
+                        progress=get_field('progress'),
+                        discovered_urls=discovered_urls,
+                        total_urls=get_field('total_urls', discovery_result),
+                        max_depth=get_field('max_depth', discovery_result),
+                        url_graph=url_graph,
+                        error=get_field('error'),
+                        created_at=get_field('created_at'),
+                        updated_at=get_field('updated_at')
+                    )
+                    return task
+            except json.JSONDecodeError as e:
+                logger.error(f"Error decoding JSON from database: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error creating discovery task from database: {str(e)}")
+                logger.error(f"Task data: {db_task}")
+                logger.error(f"Discovery result: {discovery_result}")
 
         return None
     

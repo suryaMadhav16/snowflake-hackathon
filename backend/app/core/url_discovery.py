@@ -79,7 +79,8 @@ class URLDiscoveryManager:
     async def discover_urls(
         self,
         start_url: str,
-        mode: str = "full"
+        mode: str = "full",
+        progress_callback: Optional[callable] = None
     ) -> Dict:
         """Discover URLs starting from given URL"""
         try:
@@ -118,6 +119,12 @@ class URLDiscoveryManager:
                             continue
                         
                         try:
+                            # Update progress if callback provided
+                            if progress_callback:
+                                total_found = len(self.discovered_urls) + len(current_level)
+                                progress = current_depth / self.max_depth
+                                await progress_callback(url, progress)
+                            
                             # Crawl URL
                             result = await crawler.arun(
                                 url=url,

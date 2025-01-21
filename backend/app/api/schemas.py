@@ -59,6 +59,7 @@ class DiscoveryTask(BaseModel):
     error: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    current_url: Optional[str] = None
 
 class TaskMetrics(BaseModel):
     """Task metrics information"""

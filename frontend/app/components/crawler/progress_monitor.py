@@ -45,7 +45,19 @@ class ProgressMonitor:
         # Update basic progress info
         progress = status.get("progress", 0)
         status_text = status.get("status", "In progress...")
-        metrics = status.get("metrics", {})
+        task_type = status.get("type")
+        current_url = status.get("current_url")
+        
+        # Handle metrics based on task type
+        if task_type == "discovery":
+            metrics = {
+                "successful": status.get("total_urls", 0),
+                "failed": 0,
+                "urls_per_second": 0.0,
+                "current_url": current_url
+            }
+        else:
+            metrics = status.get("metrics", {})
         
         # Update session state
         state_key = f"task_{self.task_type}_progress"
@@ -65,6 +77,11 @@ class ProgressMonitor:
         with self.progress_container:
             self.progress_bar.progress(progress)
             self.status_text.write(f"📊 **Status:** {status}")
+            
+            # Show current URL if available
+            current_url = st.session_state.get(f"task_{self.task_type}_progress", {}).get("metrics", {}).get("current_url")
+            if current_url:
+                st.write(f"🔗 Processing: `{current_url}`")
             
             # Show phase message
             if progress < 1.0:

@@ -44,6 +44,7 @@ async def discover_urls(
     """Start URL discovery process"""
     try:
         task = await task_manager.discover_urls(request.url, request.mode, request.settings)
+        logger.info(f"==Discovery task started==: {task.task_id}")
         return {
             "task_id": task.task_id,
             "status": task.status,

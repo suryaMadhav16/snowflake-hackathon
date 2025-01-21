@@ -23,9 +23,7 @@ class SnowflakeManager:
             'database': "LLM",
             'sfschema': "RAG",
             'role': settings.SNOWFLAKE_ROLE
-        }
-        logger.info("Snowflake configuration:")
-        logger.info(self.config)
+        }        
         self._conn = None
         self._lock = asyncio.Lock()
     
@@ -35,8 +33,7 @@ class SnowflakeManager:
             async with self._lock:
                 if not self._conn:
                     try:
-                        self._conn = snowflake.connector.connect(**self.config)
-                        logger.info("Connected to Snowflake successfully")
+                        self._conn = snowflake.connector.connect(**self.config)                        
                     except Exception as e:
                         logger.error(f"Failed to connect to Snowflake: {str(e)}")
                         raise
@@ -309,49 +306,49 @@ class SnowflakeManager:
             logger.error(f"Error getting discovery result: {str(e)}")
             return None
     
-    async def save_crawl_result(self, result: Dict) -> bool:
-        """Save crawl result to Snowflake"""
-        try:
-            query = """
-                MERGE INTO RAG.LLM.crawl_results t 
-                USING (SELECT %(url)s as url) s
-                ON t.url = s.url
-                WHEN MATCHED THEN 
-                    UPDATE SET
-                        success = %(success)s,
-                        html = %(html)s,
-                        cleaned_html = %(cleaned_html)s,
-                        error_message = %(error_message)s,
-                        media_data = PARSE_JSON(%(media_data)s),
-                        links_data = PARSE_JSON(%(links_data)s),
-                        metadata = PARSE_JSON(%(metadata)s)
-                WHEN NOT MATCHED THEN
-                    INSERT (
-                        url, success, html, cleaned_html,
-                        error_message, media_data, links_data, metadata
-                    ) VALUES (
-                        %(url)s, %(success)s, %(html)s, %(cleaned_html)s,
-                        %(error_message)s, PARSE_JSON(%(media_data)s),
-                        PARSE_JSON(%(links_data)s), PARSE_JSON(%(metadata)s)
-                    )
-            """
+    # async def save_crawl_result(self, result: Dict) -> bool:
+    #     """Save crawl result to Snowflake"""
+    #     try:
+    #         query = """
+    #             MERGE INTO RAG.LLM.crawl_results t 
+    #             USING (SELECT %(url)s as url) s
+    #             ON t.url = s.url
+    #             WHEN MATCHED THEN 
+    #                 UPDATE SET
+    #                     success = %(success)s,
+    #                     html = %(html)s,
+    #                     cleaned_html = %(cleaned_html)s,
+    #                     error_message = %(error_message)s,
+    #                     media_data = PARSE_JSON(%(media_data)s),
+    #                     links_data = PARSE_JSON(%(links_data)s),
+    #                     metadata = PARSE_JSON(%(metadata)s)
+    #             WHEN NOT MATCHED THEN
+    #                 INSERT (
+    #                     url, success, html, cleaned_html,
+    #                     error_message, media_data, links_data, metadata
+    #                 ) VALUES (
+    #                     %(url)s, %(success)s, %(html)s, %(cleaned_html)s,
+    #                     %(error_message)s, PARSE_JSON(%(media_data)s),
+    #                     PARSE_JSON(%(links_data)s), PARSE_JSON(%(metadata)s)
+    #                 )
+    #         """
             
-            params = {
-                'url': result['url'],
-                'success': result['success'],
-                'html': result.get('html'),
-                'cleaned_html': result.get('cleaned_html'),
-                'error_message': result.get('error_message'),
-                'media_data': json.dumps(result.get('media', {})),
-                'links_data': json.dumps(result.get('links', {})),
-                'metadata': json.dumps(result.get('metadata', {}))
-            }
+    #         params = {
+    #             'url': result['url'],
+    #             'success': result['success'],
+    #             'html': result.get('html'),
+    #             'cleaned_html': result.get('cleaned_html'),
+    #             'error_message': result.get('error_message'),
+    #             'media_data': json.dumps(result.get('media', {})),
+    #             'links_data': json.dumps(result.get('links', {})),
+    #             'metadata': json.dumps(result.get('metadata', {}))
+    #         }
             
-            await self.execute_query(query, params, fetch=False)
-            return True
-        except Exception as e:
-            logger.error(f"Error saving crawl result: {str(e)}")
-            return False
+    #         await self.execute_query(query, params, fetch=False)
+    #         return True
+    #     except Exception as e:
+    #         logger.error(f"Error saving crawl result: {str(e)}")
+    #         return False
     
     async def get_crawl_result(self, url: str) -> Optional[Dict]:
         """Get crawl result for URL"""
