@@ -58,7 +58,7 @@ async def discover_urls(url: str, settings: dict, progress: ProgressMonitor, vie
                 st.session_state.discovered_urls = urls
                 st.session_state.discovery_task_id = task_id
                 st.session_state.crawler_settings = settings
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.warning("No URLs were discovered!")
         else:
@@ -185,7 +185,7 @@ def show():
             
             # Reload results button
             if st.button("🔄 Reload Results"):
-                st.experimental_rerun()
+                st.rerun()
         else:
             st.info("Start URL discovery to see results here!")
     

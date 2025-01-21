@@ -2,6 +2,14 @@ import streamlit as st
 from utils.snowflake import SnowflakeManager
 from utils.api import FastAPIClient
 from utils.websocket import WebSocketClient
+from components.shared.websocket_monitor import render_websocket_status
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 def init_session_state():
     """Initialize session state variables"""
@@ -10,7 +18,9 @@ def init_session_state():
     if "api_client" not in st.session_state:
         st.session_state.api_client = FastAPIClient(st.secrets["api_url"])
     if "ws_client" not in st.session_state:
-        st.session_state.ws_client = WebSocketClient(st.secrets["api_url"])
+        st.session_state.ws_client = WebSocketClient(st.secrets["ws_url"])
+        st.info("WebSocket client initialized")
+        st.info(st.secrets["ws_url"])
     if "snowflake" not in st.session_state:
         st.session_state.snowflake = SnowflakeManager()
 
@@ -25,6 +35,9 @@ def main():
     
     # Initialize session state
     init_session_state()
+    
+    # Render WebSocket status monitor
+    render_websocket_status()
     
     # Display header
     st.title("🕷️ Web Crawler & RAG Assistant")

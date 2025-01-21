@@ -68,3 +68,7 @@ async def shutdown_event():
         logger.info("Application shutdown complete")
     except Exception as e:
         logger.error(f"Error during shutdown: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="localhost", port=8000, reload=True)

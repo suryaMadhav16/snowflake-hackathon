@@ -2,12 +2,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, De
 from typing import Dict, List, Optional
 import logging
 import asyncio
-from ..core.config import settings
-from ..database.snowflake_manager import SnowflakeManager
-from ..core.task_manager import TaskManager
-from ..core.storage_manager import StorageManager
-from ..core.websocket_manager import WebSocketManager
-from .schemas import CrawlerSettings, CrawlTask, CrawlResult
+import datetime
+from app.core.config import settings
+from app.database.snowflake_manager import SnowflakeManager
+from app.core.task_manager import TaskManager
+from app.core.storage_manager import StorageManager
+from app.core.websocket_manager import WebSocketManager
+from app.api.schemas import CrawlerSettings, CrawlTask, CrawlResult
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -225,6 +226,20 @@ async def websocket_progress(
             await websocket.close()
 
 # Stats endpoint
+@router.get("/ws/status")
+async def websocket_status() -> Dict:
+    """Get WebSocket connection status"""
+    try:
+        status = websocket_manager.get_connection_status()
+        return {
+            "status": "ok",
+            "connections": status,
+            "server_time": datetime.datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting WebSocket status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/stats")
 async def get_stats(
     db: SnowflakeManager = Depends(get_snowflake)

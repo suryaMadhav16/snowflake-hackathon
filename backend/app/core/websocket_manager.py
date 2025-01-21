@@ -17,13 +17,21 @@ class WebSocketManager:
     
     async def connect(self, connection_type: str, websocket: WebSocket):
         """Connect a WebSocket client"""
+        logger.debug(f"Attempting to connect {connection_type} WebSocket from {websocket.client.host}")
         if connection_type not in self.active_connections:
             raise ValueError(f"Invalid connection type: {connection_type}")
             
         await websocket.accept()
+        logger.debug(f"WebSocket accepted for {connection_type}")
         async with self._lock:
             self.active_connections[connection_type].add(websocket)
-        logger.info(f"New {connection_type} WebSocket connection")
+        logger.info(f"New {connection_type} WebSocket connection. Total connections: {self.get_connection_count(connection_type)}")
+        await websocket.send_json({
+            "status": "connected",
+            "type": connection_type,
+            "connection_id": id(websocket),
+            "client_host": websocket.client.host
+        })
     
     async def disconnect(self, connection_type: str, websocket: WebSocket):
         """Disconnect a WebSocket client"""
@@ -69,3 +77,19 @@ class WebSocketManager:
     def get_connection_count(self, connection_type: str) -> int:
         """Get count of active connections of a type"""
         return len(self.active_connections.get(connection_type, set()))
+        
+    def get_connection_status(self) -> dict:
+        """Get detailed status of all connections"""
+        return {
+            conn_type: {
+                "count": len(conns),
+                "connections": [
+                    {
+                        "id": id(ws),
+                        "client_host": ws.client.host if hasattr(ws.client, 'host') else 'unknown',
+                        "connected_at": getattr(ws, 'connected_at', None)
+                    } for ws in conns
+                ]
+            }
+            for conn_type, conns in self.active_connections.items()
+        }
