@@ -8,5 +8,5 @@ asyncio
 python-dateutil
 beautifulsoup4
 html5lib
- playwright
- pytest-playwright
+playwright
+pytest-playwright
