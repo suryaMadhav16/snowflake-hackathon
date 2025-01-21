@@ -1,6 +1,7 @@
 import logging
 import json
 import asyncio
+import os
 from typing import Dict, List, Optional, Union
 from datetime import datetime
 import snowflake.connector
@@ -13,15 +14,18 @@ class SnowflakeManager:
     """Manages Snowflake connections and operations"""
     
     def __init__(self):
+        """Initialize Snowflake manager"""
         self.config = {
             'user': settings.SNOWFLAKE_USER,
             'password': settings.SNOWFLAKE_PASSWORD,
             'account': settings.SNOWFLAKE_ACCOUNT,
-            'warehouse': settings.SNOWFLAKE_WAREHOUSE,
-            'database': settings.SNOWFLAKE_DATABASE,
-            'schema': settings.SNOWFLAKE_SCHEMA,
+            'warehouse': "Medium",
+            'database': "LLM",
+            'sfschema': "RAG",
             'role': settings.SNOWFLAKE_ROLE
         }
+        logger.info("Snowflake configuration:")
+        logger.info(self.config)
         self._conn = None
         self._lock = asyncio.Lock()
     
@@ -66,80 +70,75 @@ class SnowflakeManager:
             if 'cur' in locals():
                 cur.close()
     
-    async def initialize_tables(self):
-        """Initialize database tables"""
+    async def execute_file(self, file_path: str):
+        """Execute SQL file"""
         try:
-            # Create discovery_results table
-            await self.execute_query("""
-                CREATE TABLE IF NOT EXISTS discovery_results (
-                    task_id STRING PRIMARY KEY,
-                    start_url STRING,
-                    discovered_urls ARRAY,
-                    total_urls INTEGER,
-                    max_depth INTEGER,
-                    url_graph VARIANT,
-                    created_at TIMESTAMP_NTZ,
-                    completed_at TIMESTAMP_NTZ
-                )
-            """)
+            # Read SQL file
+            with open(file_path, 'r') as file:
+                sql_content = file.read()
+                
+            # Split into individual commands
+            sql_commands = [cmd.strip() for cmd in sql_content.split(';') if cmd.strip()]
             
-            # Create crawl_results table
-            await self.execute_query("""
-                CREATE TABLE IF NOT EXISTS crawl_results (
-                    url STRING PRIMARY KEY,
-                    success BOOLEAN,
-                    html STRING,
-                    cleaned_html STRING,
-                    error_message STRING,
-                    media_data VARIANT,
-                    links_data VARIANT,
-                    metadata VARIANT,
-                    created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
-                )
-            """)
+            # Execute each command
+            for command in sql_commands:
+                try:
+                    await self.execute_query(command, fetch=False)
+                except Exception as e:
+                    logger.error(f"Error executing command: {command[:100]}...")
+                    logger.error(f"Error details: {str(e)}")
+                    raise
             
-            # Create saved_files table
-            await self.execute_query("""
-                CREATE TABLE IF NOT EXISTS saved_files (
-                    url STRING,
-                    file_type STRING,
-                    stage_path STRING,
-                    content_type STRING,
-                    size NUMBER,
-                    metadata VARIANT,
-                    created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-                    PRIMARY KEY (url, file_type, stage_path)
-                )
-            """)
-            
-            # Create task_metrics table
-            await self.execute_query("""
-                CREATE TABLE IF NOT EXISTS task_metrics (
-                    task_id STRING,
-                    timestamp TIMESTAMP_NTZ,
-                    metrics VARIANT,
-                    PRIMARY KEY (task_id, timestamp)
-                )
-            """)
-            
-            logger.info("Database tables initialized successfully")
+            logger.info(f"Successfully executed SQL file: {file_path}")
         except Exception as e:
-            logger.error(f"Error initializing tables: {str(e)}")
+            logger.error(f"Error executing SQL file: {str(e)}")
+            raise
+    
+    async def initialize_environment(self):
+        """Initialize Snowflake environment"""
+        try:
+            # Get the path to init.sql
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            init_sql_path = os.path.join(current_dir, 'init.sql')
+            
+            # Execute initialization script
+            await self.execute_file(init_sql_path)
+            logger.info("Successfully initialized Snowflake environment")
+            
+        except Exception as e:
+            logger.error(f"Error initializing Snowflake environment: {str(e)}")
             raise
     
     async def save_discovery_result(self, result: Dict) -> bool:
         """Save URL discovery result"""
         try:
-            query = """
-                INSERT INTO discovery_results (
-                    task_id, start_url, discovered_urls,
-                    total_urls, max_depth, url_graph,
-                    created_at, completed_at
-                ) VALUES (
-                    %(task_id)s, %(start_url)s, %(discovered_urls)s,
-                    %(total_urls)s, %(max_depth)s, %(url_graph)s,
-                    %(created_at)s, %(completed_at)s
-                )
+            database = self.config['database']
+            schema = self.config['sfschema']
+            logger.info(f"Saving discovery result for task_id: {result['task_id']}")
+            logger.info(database)
+            logger.info(schema)
+            q = f"MERGE INTO {database}.{schema}.discovery_results t"
+            query = q + """                 
+                USING (SELECT %(task_id)s as task_id) s
+                ON t.task_id = s.task_id
+                WHEN MATCHED THEN 
+                    UPDATE SET
+                        start_url = %(start_url)s,
+                        discovered_urls = PARSE_JSON(%(discovered_urls)s),
+                        total_urls = %(total_urls)s,
+                        max_depth = %(max_depth)s,
+                        url_graph = PARSE_JSON(%(url_graph)s),
+                        completed_at = %(completed_at)s
+                WHEN NOT MATCHED THEN
+                    INSERT (
+                        task_id, start_url, discovered_urls,
+                        total_urls, max_depth, url_graph,
+                        created_at, completed_at
+                    ) VALUES (
+                        %(task_id)s, %(start_url)s, PARSE_JSON(%(discovered_urls)s),
+                        %(total_urls)s, %(max_depth)s, PARSE_JSON(%(url_graph)s),
+                        %(created_at)s, %(completed_at)s
+                    )
             """
             
             params = {
@@ -163,15 +162,21 @@ class SnowflakeManager:
         """Get discovery result by task ID"""
         try:
             query = """
-                SELECT *
+                SELECT 
+                    task_id,
+                    start_url,
+                    discovered_urls,
+                    total_urls,
+                    max_depth,
+                    url_graph,
+                    created_at,
+                    completed_at
                 FROM discovery_results
                 WHERE task_id = %(task_id)s
             """
             results = await self.execute_query(query, {'task_id': task_id})
             if results:
                 result = results[0]
-                result['discovered_urls'] = json.loads(result['discovered_urls'])
-                result['url_graph'] = json.loads(result['url_graph'])
                 return result
             return None
         except Exception as e:
@@ -182,15 +187,27 @@ class SnowflakeManager:
         """Save crawl result to Snowflake"""
         try:
             query = """
-                INSERT INTO crawl_results (
-                    url, success, html, cleaned_html,
-                    error_message, media_data, links_data, metadata,
-                    created_at
-                ) VALUES (
-                    %(url)s, %(success)s, %(html)s, %(cleaned_html)s,
-                    %(error_message)s, %(media_data)s, %(links_data)s, %(metadata)s,
-                    CURRENT_TIMESTAMP
-                )
+                MERGE INTO crawl_results t 
+                USING (SELECT %(url)s as url) s
+                ON t.url = s.url
+                WHEN MATCHED THEN 
+                    UPDATE SET
+                        success = %(success)s,
+                        html = %(html)s,
+                        cleaned_html = %(cleaned_html)s,
+                        error_message = %(error_message)s,
+                        media_data = PARSE_JSON(%(media_data)s),
+                        links_data = PARSE_JSON(%(links_data)s),
+                        metadata = PARSE_JSON(%(metadata)s)
+                WHEN NOT MATCHED THEN
+                    INSERT (
+                        url, success, html, cleaned_html,
+                        error_message, media_data, links_data, metadata
+                    ) VALUES (
+                        %(url)s, %(success)s, %(html)s, %(cleaned_html)s,
+                        %(error_message)s, PARSE_JSON(%(media_data)s),
+                        PARSE_JSON(%(links_data)s), PARSE_JSON(%(metadata)s)
+                    )
             """
             
             params = {
@@ -213,13 +230,17 @@ class SnowflakeManager:
     async def get_crawl_result(self, url: str) -> Optional[Dict]:
         """Get crawl result for URL"""
         try:
-            query = "SELECT * FROM crawl_results WHERE url = %(url)s"
+            query = """
+                SELECT 
+                    url, success, html, cleaned_html,
+                    error_message, media_data, links_data, metadata,
+                    created_at
+                FROM crawl_results 
+                WHERE url = %(url)s
+            """
             results = await self.execute_query(query, {'url': url})
             if results:
                 result = results[0]
-                result['media_data'] = json.loads(result['media_data'])
-                result['links_data'] = json.loads(result['links_data'])
-                result['metadata'] = json.loads(result['metadata'])
                 return result
             return None
         except Exception as e:
@@ -230,13 +251,29 @@ class SnowflakeManager:
         """Save file information to Snowflake"""
         try:
             query = """
-                INSERT INTO saved_files (
-                    url, file_type, stage_path, content_type,
-                    size, metadata, created_at
-                ) VALUES (
-                    %(url)s, %(file_type)s, %(stage_path)s, %(content_type)s,
-                    %(size)s, %(metadata)s, CURRENT_TIMESTAMP
-                )
+                MERGE INTO saved_files t 
+                USING (
+                    SELECT 
+                        %(url)s as url,
+                        %(file_type)s as file_type,
+                        %(stage_path)s as stage_path
+                ) s
+                ON t.url = s.url 
+                    AND t.file_type = s.file_type 
+                    AND t.stage_path = s.stage_path
+                WHEN MATCHED THEN 
+                    UPDATE SET
+                        content_type = %(content_type)s,
+                        size = %(size)s,
+                        metadata = PARSE_JSON(%(metadata)s)
+                WHEN NOT MATCHED THEN
+                    INSERT (
+                        url, file_type, stage_path,
+                        content_type, size, metadata
+                    ) VALUES (
+                        %(url)s, %(file_type)s, %(stage_path)s,
+                        %(content_type)s, %(size)s, PARSE_JSON(%(metadata)s)
+                    )
             """
             
             params = {
@@ -254,6 +291,29 @@ class SnowflakeManager:
             logger.error(f"Error saving file info: {str(e)}")
             return False
     
+    async def get_files(self, url: str, file_type: Optional[str] = None) -> List[Dict]:
+        """Get file information"""
+        try:
+            query = """
+                SELECT 
+                    url, file_type, stage_path,
+                    content_type, size, metadata,
+                    created_at
+                FROM saved_files
+                WHERE url = %(url)s
+            """
+            params = {'url': url}
+            
+            if file_type:
+                query += " AND file_type = %(file_type)s"
+                params['file_type'] = file_type
+            
+            results = await self.execute_query(query, params)
+            return results or []
+        except Exception as e:
+            logger.error(f"Error getting files: {str(e)}")
+            return []
+    
     async def save_task_metrics(self, task_id: str, metrics: Dict) -> bool:
         """Save task metrics snapshot"""
         try:
@@ -261,7 +321,7 @@ class SnowflakeManager:
                 INSERT INTO task_metrics (
                     task_id, timestamp, metrics
                 ) VALUES (
-                    %(task_id)s, CURRENT_TIMESTAMP, %(metrics)s
+                    %(task_id)s, CURRENT_TIMESTAMP(), PARSE_JSON(%(metrics)s)
                 )
             """
             
@@ -283,8 +343,8 @@ class SnowflakeManager:
             crawl_query = """
                 SELECT 
                     COUNT(*) as total_urls,
-                    SUM(CASE WHEN success THEN 1 ELSE 0 END) as successful_urls,
-                    SUM(CASE WHEN NOT success THEN 1 ELSE 0 END) as failed_urls
+                    COUNT_IF(success) as successful_urls,
+                    COUNT_IF(NOT success) as failed_urls
                 FROM crawl_results
             """
             
@@ -341,3 +401,12 @@ class SnowflakeManager:
         except Exception as e:
             logger.error(f"Error getting stats: {str(e)}")
             return {}
+    
+    def close(self):
+        """Close Snowflake connection"""
+        if self._conn:
+            try:
+                self._conn.close()
+                self._conn = None
+            except Exception as e:
+                logger.error(f"Error closing Snowflake connection: {str(e)}")

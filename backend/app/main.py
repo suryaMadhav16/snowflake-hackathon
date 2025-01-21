@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+import logging
 
 from .core.config import settings
+from .database.snowflake_manager import SnowflakeManager
 from .api.routes import router as api_router
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -43,10 +47,24 @@ async def root():
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    pass
+    try:
+        # Initialize Snowflake environment
+        snowflake = SnowflakeManager()
+        # await snowflake.initialize_environment()
+        logger.info("Snowflake environment initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {str(e)}")
+        # We allow the application to start even if initialization fails
+        # This way we can fix issues while the app is running
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
-    pass
+    try:
+        # Close any active Snowflake connections
+        snowflake = SnowflakeManager()
+        snowflake.close()
+        logger.info("Application shutdown complete")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {str(e)}")

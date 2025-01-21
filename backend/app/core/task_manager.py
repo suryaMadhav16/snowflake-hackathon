@@ -6,6 +6,7 @@ from datetime import datetime
 from .websocket_manager import WebSocketManager
 from .url_discovery import URLDiscoveryManager
 from ..database.snowflake_manager import SnowflakeManager
+from .storage_manager import StorageManager
 from ..api.schemas import CrawlerSettings, CrawlTask, DiscoveryTask
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
@@ -270,6 +271,60 @@ class TaskManager:
                             try:
                                 if result.success:
                                     task.metrics["successful"] += 1
+
+                                    # Save content files
+                                    storage_manager = StorageManager(self.snowflake)
+
+                                    # Save markdown if available
+                                    if hasattr(result, 'markdown') and result.markdown:
+                                        await storage_manager.save_file(
+                                            url=result.url,
+                                            file_type='markdown',
+                                            content=result.markdown,
+                                            content_type='text/markdown',
+                                            metadata={'type': 'content'}
+                                        )
+                                        task.metrics['saved_content']['markdown'] += 1
+
+                                    # Save screenshot if enabled and available
+                                    if task.settings.capture_screenshots and result.screenshot:
+                                        await storage_manager.save_file(
+                                            url=result.url,
+                                            file_type='screenshot',
+                                            content=result.screenshot,
+                                            content_type='image/png',
+                                            metadata={'type': 'screenshot'}
+                                        )
+                                        task.metrics['saved_content']['screenshot'] += 1
+
+                                    # Save PDF if enabled and available
+                                    if task.settings.generate_pdfs and result.pdf:
+                                        await storage_manager.save_file(
+                                            url=result.url,
+                                            file_type='pdf',
+                                            content=result.pdf,
+                                            content_type='application/pdf',
+                                            metadata={'type': 'document'}
+                                        )
+                                        task.metrics['saved_content']['pdf'] += 1
+
+                                    # Save images if available
+                                    if task.settings.save_images and result.media and 'images' in result.media:
+                                        for idx, image in enumerate(result.media['images']):
+                                            if image.get('data'):
+                                                await storage_manager.save_file(
+                                                    url=f"{result.url}#image{idx}",
+                                                    file_type='image',
+                                                    content=image['data'],
+                                                    content_type=image.get('type', 'image/jpeg'),
+                                                    metadata={
+                                                        'type': 'image',
+                                                        'original_src': image.get('src'),
+                                                        'alt': image.get('alt')
+                                                    }
+                                                )
+                                                task.metrics['saved_content']['images'] += 1
+
                                     # Save to Snowflake
                                     await self.snowflake.save_crawl_result({
                                         "url": result.url,
