@@ -5,32 +5,23 @@ import mimetypes
 from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
-from database.db_manager import DatabaseManager
+from database.snowflake_manager import SnowflakeManager
 
 logger = logging.getLogger(__name__)
 
 class ContentProcessor:
-    """Processes and saves crawled content to filesystem"""
+    """Processes and saves crawled content to Snowflake stage"""
     
-    def __init__(self, domain: str, db: DatabaseManager = None):
+    def __init__(self, domain: str, db: SnowflakeManager = None):
         """Initialize the content processor"""
         self.domain = domain
-        self.base_dir = Path('/tmp/webscrapper') / domain
-        self.db = db or DatabaseManager()
+        self.db = db or SnowflakeManager()
         
-        # Create directories for different content types
-        self.dirs = {
-            'markdown': self.base_dir / 'markdown',
-            'images': self.base_dir / 'images',
-            'pdfs': self.base_dir / 'pdfs',
-            'screenshots': self.base_dir / 'screenshots'
-        }
+        # Temporary directory for processing before upload
+        self.temp_dir = Path('/tmp/webscrapper_temp') / domain
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
         
-        # Create directories
-        for directory in self.dirs.values():
-            directory.mkdir(parents=True, exist_ok=True)
-            
-        logger.info(f"Initialized content directories at {self.base_dir}")
+        logger.info(f"Initialized content processor for domain: {domain}")
 
     def _get_safe_filename(self, url: str, ext: str = '') -> str:
         """Generate safe filename from URL"""
@@ -45,10 +36,8 @@ class ContentProcessor:
             return None
             
         try:
-            # Remove data URL prefix if present
             if ',' in data:
                 data = data.split(',', 1)[1]
-            # Remove whitespace
             data = data.strip()
             return base64.b64decode(data)
         except Exception as e:
@@ -56,7 +45,7 @@ class ContentProcessor:
             return None
 
     async def save_content(self, result) -> Dict[str, List[Dict]]:
-        """Save all content from a crawl result"""
+        """Save all content to Snowflake stage"""
         saved_files = {
             'markdown': [],
             'images': [],
@@ -69,48 +58,54 @@ class ContentProcessor:
             if result.markdown_v2:
                 try:
                     content = result.markdown_v2.raw_markdown if hasattr(result.markdown_v2, 'raw_markdown') else str(result.markdown_v2)
-                    filepath = self.dirs['markdown'] / self._get_safe_filename(result.url, '.md')
-                    filepath.write_text(content, encoding='utf-8')
+                    filename = self._get_safe_filename(result.url, '.md')
+                    temp_path = self.temp_dir / filename
+                    temp_path.write_text(content, encoding='utf-8')
                     
-                    file_info = {
-                        'url': result.url,
-                        'file_path': str(filepath),
-                        'size': filepath.stat().st_size,
-                        'content_type': 'text/markdown',
-                        'metadata': {'type': 'markdown_v2'}
-                    }
-                    saved_files['markdown'].append(file_info)
-                    await self.db.save_file_path(
-                        result.url, 
-                        'markdown',
-                        filepath,
-                        'text/markdown',
-                        {'type': 'markdown_v2'}
-                    )
-                    logger.info(f"Saved markdown for {result.url}")
+                    # Upload to Snowflake stage
+                    stage_path = f"{self.domain}/markdown/{filename}"
+                    if await self.db.upload_to_stage(temp_path, stage_path):
+                        file_info = {
+                            'url': result.url,
+                            'file_name': filename,
+                            'file_type': 'markdown',
+                            'size': temp_path.stat().st_size,
+                            'content_type': 'text/markdown',
+                            'metadata': {
+                                'type': 'markdown_v2',
+                                'markdown_content': content  # Store content for RAG processing
+                            }
+                        }
+                        saved_files['markdown'].append(file_info)
+                        await self.db.save_file_metadata(result.url, file_info)
+                        logger.info(f"Saved markdown for {result.url}")
+                    
+                    # Cleanup temp file
+                    temp_path.unlink()
                 except Exception as e:
                     logger.error(f"Failed to save markdown for {result.url}: {e}")
 
             # Save PDF
             if result.pdf:
                 try:
-                    filepath = self.dirs['pdfs'] / self._get_safe_filename(result.url, '.pdf')
-                    filepath.write_bytes(result.pdf)
+                    filename = self._get_safe_filename(result.url, '.pdf')
+                    temp_path = self.temp_dir / filename
+                    temp_path.write_bytes(result.pdf)
                     
-                    file_info = {
-                        'url': result.url,
-                        'file_path': str(filepath),
-                        'size': filepath.stat().st_size,
-                        'content_type': 'application/pdf'
-                    }
-                    saved_files['pdf'].append(file_info)
-                    await self.db.save_file_path(
-                        result.url,
-                        'pdf',
-                        filepath,
-                        'application/pdf'
-                    )
-                    logger.info(f"Saved PDF for {result.url}")
+                    stage_path = f"{self.domain}/pdfs/{filename}"
+                    if await self.db.upload_to_stage(temp_path, stage_path):
+                        file_info = {
+                            'url': result.url,
+                            'file_name': filename,
+                            'file_type': 'pdf',
+                            'size': temp_path.stat().st_size,
+                            'content_type': 'application/pdf'
+                        }
+                        saved_files['pdf'].append(file_info)
+                        await self.db.save_file_metadata(result.url, file_info)
+                        logger.info(f"Saved PDF for {result.url}")
+                    
+                    temp_path.unlink()
                 except Exception as e:
                     logger.error(f"Failed to save PDF for {result.url}: {e}")
 
@@ -121,28 +116,31 @@ class ContentProcessor:
                         if 'data' in img and img.get('src'):
                             img_data = self._decode_base64(img['data'])
                             if img_data:
-                                # Get extension from src or default to .png
                                 ext = os.path.splitext(img['src'])[1] or '.png'
-                                filepath = self.dirs['images'] / self._get_safe_filename(img['src'], ext)
-                                filepath.write_bytes(img_data)
+                                filename = self._get_safe_filename(img['src'], ext)
+                                temp_path = self.temp_dir / filename
+                                temp_path.write_bytes(img_data)
                                 
-                                content_type = mimetypes.guess_type(filepath)[0] or 'image/unknown'
-                                file_info = {
-                                    'url': result.url,
-                                    'image_url': img['src'],
-                                    'file_path': str(filepath),
-                                    'size': filepath.stat().st_size,
-                                    'content_type': content_type,
-                                    'metadata': {'alt': img.get('alt', ''), 'score': img.get('score', 0)}
-                                }
-                                saved_files['images'].append(file_info)
-                                await self.db.save_file_path(
-                                    result.url,
-                                    'image',
-                                    filepath,
-                                    content_type,
-                                    {'alt': img.get('alt', ''), 'score': img.get('score', 0)}
-                                )
+                                stage_path = f"{self.domain}/images/{filename}"
+                                content_type = mimetypes.guess_type(temp_path)[0] or 'image/unknown'
+                                
+                                if await self.db.upload_to_stage(temp_path, stage_path):
+                                    file_info = {
+                                        'url': result.url,
+                                        'file_name': filename,
+                                        'file_type': 'image',
+                                        'size': temp_path.stat().st_size,
+                                        'content_type': content_type,
+                                        'metadata': {
+                                            'alt': img.get('alt', ''),
+                                            'score': img.get('score', 0),
+                                            'src': img['src']
+                                        }
+                                    }
+                                    saved_files['images'].append(file_info)
+                                    await self.db.save_file_metadata(result.url, file_info)
+                                
+                                temp_path.unlink()
                     except Exception as e:
                         logger.error(f"Failed to save image {idx} from {result.url}: {e}")
 
@@ -151,23 +149,24 @@ class ContentProcessor:
                 try:
                     screenshot_data = self._decode_base64(result.screenshot)
                     if screenshot_data:
-                        filepath = self.dirs['screenshots'] / self._get_safe_filename(result.url, '.png')
-                        filepath.write_bytes(screenshot_data)
+                        filename = self._get_safe_filename(result.url, '.png')
+                        temp_path = self.temp_dir / filename
+                        temp_path.write_bytes(screenshot_data)
                         
-                        file_info = {
-                            'url': result.url,
-                            'file_path': str(filepath),
-                            'size': filepath.stat().st_size,
-                            'content_type': 'image/png'
-                        }
-                        saved_files['screenshot'].append(file_info)
-                        await self.db.save_file_path(
-                            result.url,
-                            'screenshot',
-                            filepath,
-                            'image/png'
-                        )
-                        logger.info(f"Saved screenshot for {result.url}")
+                        stage_path = f"{self.domain}/screenshots/{filename}"
+                        if await self.db.upload_to_stage(temp_path, stage_path):
+                            file_info = {
+                                'url': result.url,
+                                'file_name': filename,
+                                'file_type': 'screenshot',
+                                'size': temp_path.stat().st_size,
+                                'content_type': 'image/png'
+                            }
+                            saved_files['screenshot'].append(file_info)
+                            await self.db.save_file_metadata(result.url, file_info)
+                            logger.info(f"Saved screenshot for {result.url}")
+                        
+                        temp_path.unlink()
                 except Exception as e:
                     logger.error(f"Failed to save screenshot for {result.url}: {e}")
 
@@ -177,34 +176,23 @@ class ContentProcessor:
             logger.error(f"Error saving content for {result.url}: {e}")
             return saved_files
 
-    async def cleanup_old_files(self, days: int = 30):
-        """Clean up files older than specified days"""
+    async def cleanup_temp_dir(self):
+        """Clean up temporary directory"""
         try:
-            for directory in self.dirs.values():
-                for file in directory.glob('*'):
-                    if file.stat().st_mtime < (time.time() - days * 86400):
-                        try:
-                            file.unlink()
-                            logger.info(f"Deleted old file: {file}")
-                        except Exception as e:
-                            logger.error(f"Failed to delete {file}: {e}")
+            if self.temp_dir.exists():
+                for file in self.temp_dir.glob('*'):
+                    try:
+                        file.unlink()
+                    except Exception as e:
+                        logger.error(f"Failed to delete temp file {file}: {e}")
+                self.temp_dir.rmdir()
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+            logger.error(f"Error cleaning up temp directory: {e}")
 
-    def get_storage_info(self) -> Dict:
-        """Get storage usage information"""
-        info = {}
+    async def get_storage_info(self) -> Dict:
+        """Get storage usage information from Snowflake"""
         try:
-            total_size = 0
-            for dir_type, directory in self.dirs.items():
-                size = sum(f.stat().st_size for f in directory.glob('**/*') if f.is_file())
-                count = sum(1 for _ in directory.glob('**/*') if f.is_file())
-                info[dir_type] = {
-                    'size': size,
-                    'count': count
-                }
-                total_size += size
-            info['total_size'] = total_size
+            return await self.db.get_stats()
         except Exception as e:
             logger.error(f"Error getting storage info: {e}")
-        return info
+            return {}

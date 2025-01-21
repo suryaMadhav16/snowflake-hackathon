@@ -14,6 +14,7 @@ sys.path.insert(0, src_dir)
 from core.url_manager import URLManager
 from core.crawler import BatchCrawler
 from database.db_manager import DatabaseManager
+from config.snowflake import load_snowflake_config, validate_config
 from .models import (
     DiscoverURLRequest, 
     DiscoverURLResponse,
@@ -25,6 +26,11 @@ from .models import (
 from crawl4ai import BrowserConfig, CrawlerRunConfig, CacheMode
 
 router = APIRouter()
+
+# Load Snowflake configuration
+snowflake_config = load_snowflake_config()
+if error := validate_config(snowflake_config):
+    raise Exception(f"Invalid Snowflake configuration: {error}")
 
 # Default configurations
 DEFAULT_BROWSER_CONFIG = BrowserConfig(
@@ -75,10 +81,15 @@ async def discover_urls(request: DiscoverURLRequest) -> DiscoverURLResponse:
 async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
     """Crawl selected URLs"""
     try:
+        # Initialize DatabaseManager with Snowflake config
+        db = DatabaseManager(config=snowflake_config)
+        await db.initialize()
+        
         crawler = BatchCrawler(
             browser_config=DEFAULT_BROWSER_CONFIG,
             crawl_config=DEFAULT_CRAWLER_CONFIG,
-            excluded_patterns=request.exclude_patterns
+            excluded_patterns=request.exclude_patterns,
+            db=db  # Pass configured db instance
         )
         
         results = []
@@ -87,7 +98,6 @@ async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
                 # Get saved files for this result from database
                 saved_files = {}
                 if result.success:
-                    db = DatabaseManager()
                     files = await db.get_saved_files(result.url)
                     for file in files:
                         saved_files[file['file_type']] = file['file_path']
