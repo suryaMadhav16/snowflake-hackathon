@@ -40,25 +40,6 @@ def install_playwright():
         logger.error(f"Failed to install Playwright browsers: {e}")
         return False
 
-def install_dependencies():
-    try:
-        logger.info("Installing Playwright dependencies...")
-        subprocess.run(['playwright', 'install-deps'], check=True)
-        logger.info("Playwright dependencies installed successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to install dependencies: {e}")
-        return False
-
-def run_playwright_reps():
-    try:
-        logger.info("Running playwright reps command...")
-        result = subprocess.run(['playwright', 'reps'], check=True)
-        logger.info("Playwright reps completed successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to run playwright reps: {e}")
-        return False
 
 # Set page config first before any other Streamlit commands
 st.set_page_config(
@@ -76,13 +57,7 @@ if src_path not in sys.path:
 if not check_playwright_installation():
     if not install_playwright():
         st.error("Failed to install Playwright. Please check the logs for details.")
-        st.stop()
-    if not install_dependencies():
-        st.error("Failed to install Playwright dependencies. Please check the logs for details.")
-        st.stop()
-    if not run_playwright_reps():
-        st.error("Failed to run playwright reps. Please check the logs for details.")
-        st.stop()
+        st.stop()        
 
 # Import our application
 from src.ui import main
