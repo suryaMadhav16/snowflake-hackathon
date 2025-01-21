@@ -1,8 +1,0 @@
-streamlit>=1.28.0
-snowflake-snowpark-python>=1.0.0
-httpx>=0.25.0
-websockets>=11.0.3
-pandas>=2.0.0
-plotly>=5.13.0
-python-dotenv>=1.0.0
-validators>=0.20.0
