@@ -1,204 +1,109 @@
--- Set up environment
-USE ROLE ACCOUNTADMIN;
-CREATE OR REPLACE WAREHOUSE MEDIUM WAREHOUSE_SIZE='MEDIUM' AUTO_SUSPEND=300;
-CREATE DATABASE IF NOT EXISTS LLM;
-CREATE SCHEMA IF NOT EXISTS LLM.RAG;
-
-USE LLM.RAG;
-
--- Create stage for storing files
-CREATE OR REPLACE STAGE DOCUMENTATIONS
-    FILE_FORMAT = (
-        TYPE = 'CSV'
-        FIELD_DELIMITER = ','
-        SKIP_HEADER = 1
-        FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-    );
-
--- Create tables for RAG
-CREATE OR REPLACE TABLE DOCUMENTATIONS (
-    FILE_NAME STRING PRIMARY KEY,
-    CONTENTS STRING,
-    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
-);
-
--- Create chunked table for RAG processing
-CREATE OR REPLACE TABLE DOCUMENTATIONS_CHUNKED (
-    FILE_NAME STRING,
-    CHUNK_NUMBER INTEGER,
-    CHUNK_TEXT STRING,
-    COMBINED_CHUNK_TEXT STRING,
-    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    PRIMARY KEY (FILE_NAME, CHUNK_NUMBER)
-);
-
--- Create vectors table for embeddings
-CREATE OR REPLACE TABLE DOCUMENTATIONS_CHUNKED_VECTORS (
-    FILE_NAME STRING,
-    CHUNK_NUMBER INTEGER,
-    CHUNK_TEXT STRING,
-    COMBINED_CHUNK_TEXT STRING,
-    COMBINED_CHUNK_VECTOR ARRAY,
-    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    PRIMARY KEY (FILE_NAME, CHUNK_NUMBER)
-);
-
--- Create tables for crawler operations
-CREATE OR REPLACE TABLE CRAWL_METADATA (
-    URL STRING PRIMARY KEY,
-    SUCCESS BOOLEAN,
-    ERROR_MESSAGE STRING,
-    METADATA OBJECT,  -- JSON object for flexible metadata
-    TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    FILE_NAME STRING,  -- Links to DOCUMENTATIONS table
-    FILE_TYPE STRING,  -- 'markdown', 'pdf', 'image', 'screenshot'
-    CONTENT_TYPE STRING,  -- MIME type
-    SIZE NUMBER  -- File size in bytes
-);
-
--- Create task metrics table
-CREATE OR REPLACE TABLE TASK_METRICS (
-    TASK_ID STRING NOT NULL,
-    TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    METRICS OBJECT,   -- JSON object for metrics
-    PRIMARY KEY (TASK_ID, TIMESTAMP)
-);
-
--- Create tasks table
-CREATE OR REPLACE TABLE TASKS (
-    TASK_ID STRING PRIMARY KEY,
-    TASK_TYPE STRING NOT NULL,
-    STATUS STRING NOT NULL,
-    PROGRESS FLOAT DEFAULT 0.0,
-    SETTINGS OBJECT,
-    METRICS OBJECT,
-    ERROR STRING,
-    CURRENT_URL STRING,
-    URLS ARRAY,
-    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    UPDATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    COMPLETED_AT TIMESTAMP_NTZ
-);
-
--- Create discovery results table
-CREATE OR REPLACE TABLE DISCOVERY_RESULTS (
-    TASK_ID STRING PRIMARY KEY,
-    START_URL STRING,
-    DISCOVERED_URLS ARRAY,
-    TOTAL_URLS NUMBER,
-    MAX_DEPTH NUMBER,
-    URL_GRAPH OBJECT,
-    CREATED_AT TIMESTAMP_NTZ,
-    COMPLETED_AT TIMESTAMP_NTZ
-);
-
--- Create UDF for markdown processing
-CREATE OR REPLACE FUNCTION PY_READ_MARKDOWN(file STRING)
-    RETURNS STRING 
-    LANGUAGE PYTHON
-    RUNTIME_VERSION = '3.8'
-    PACKAGES = ('snowflake-snowpark-python', 'markdown', 'mistune')
-    HANDLER = 'read_file'
-AS 
-$$
-import mistune
-from snowflake.snowpark.files import SnowflakeFile
-from html.parser import HTMLParser
-
-def read_file(file_path):
-    with SnowflakeFile.open(file_path, 'r') as file:
-        markdown_content = file.read()
-        html_content = mistune.html(markdown_content)
-        
-        class MLStripper(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.reset()
-                self.strict = False
-                self.convert_charrefs = True
-                self.text = []
-                
-            def handle_data(self, d):
-                self.text.append(d)
-                
-            def get_data(self):
-                return ' '.join(self.text)
-                
-        stripper = MLStripper()
-        stripper.feed(html_content)
-        plain_text = stripper.get_data()
-        
-        return plain_text
-$$;
-
--- Create UDF for binary file processing
-CREATE OR REPLACE FUNCTION PROCESS_BINARY_FILE(file_content BINARY, file_type STRING)
-    RETURNS STRING
-    LANGUAGE PYTHON
-    RUNTIME_VERSION = '3.8'
-    PACKAGES = ('snowflake-snowpark-python', 'python-magic')
-    HANDLER = 'process_file'
-AS 
-$$
-import magic
-
-def process_file(file_content, file_type):
-    try:
-        mime = magic.Magic(mime=True)
-        detected_type = mime.from_buffer(file_content)
-        
-        metadata = {
-            'MIME_TYPE': detected_type,
-            'SIZE': len(file_content),
-            'FILE_TYPE': file_type
-        }
-        
-        return str(metadata)
-    except Exception as e:
-        return str({'ERROR': str(e)})
-$$;
-
--- Create procedure for syncing crawl content
+-- Create sync procedure with improved error handling
 CREATE OR REPLACE PROCEDURE SYNC_CRAWL_CONTENT()
-    RETURNS STRING
+    RETURNS VARIANT
     LANGUAGE SQL
 AS
+$$
+DECLARE
+    result VARIANT;
+    rows_inserted INTEGER DEFAULT 0;
 BEGIN
-    DECLARE
-        sync_count NUMBER DEFAULT 0;
-        error_message STRING DEFAULT NULL;
-    BEGIN
-        -- Begin transaction
-        BEGIN TRANSACTION;
-        
-        -- Sync markdown content to DOCUMENTATIONS table
-        MERGE INTO DOCUMENTATIONS d
-        USING (
-            SELECT 
-                FILE_NAME,
-                METADATA:MARKDOWN_CONTENT::STRING as CONTENTS
-            FROM CRAWL_METADATA
-            WHERE FILE_TYPE = 'markdown'
-            AND METADATA:MARKDOWN_CONTENT IS NOT NULL
-        ) cm
-        ON d.FILE_NAME = cm.FILE_NAME
-        WHEN NOT MATCHED THEN
-            INSERT (FILE_NAME, CONTENTS)
-            VALUES (cm.FILE_NAME, cm.CONTENTS)
-        WHEN MATCHED THEN
-            UPDATE SET CONTENTS = cm.CONTENTS;
-            
-        SET sync_count = number_of_rows_inserted + number_of_rows_updated;
-        
-        -- Commit transaction
-        COMMIT;
-        
-        RETURN 'Sync completed successfully: ' || sync_count || ' rows processed';
-        
-    EXCEPTION
-        WHEN OTHER THEN
-            SET error_message = 'Error during sync: ' || SQLSTATE || ': ' || SQLERRM;
-            ROLLBACK;
-            RETURN error_message;
-    END;
+    -- Merge markdown content to DOCUMENTATIONS table
+    MERGE INTO DOCUMENTATIONS d
+    USING (
+        SELECT 
+            FILE_NAME,
+            METADATA:markdown_content::STRING as CONTENTS
+        FROM CRAWL_METADATA
+        WHERE FILE_TYPE = 'markdown'
+        AND METADATA:markdown_content IS NOT NULL
+    ) m
+    ON d.FILE_NAME = m.FILE_NAME
+    WHEN NOT MATCHED THEN
+        INSERT (FILE_NAME, CONTENTS)
+        VALUES (m.FILE_NAME, m.CONTENTS)
+    WHEN MATCHED THEN
+        UPDATE SET CONTENTS = m.CONTENTS;
+    
+    SET rows_inserted = SQLROWCOUNT;
+
+    -- Create chunks for new documents using SPLIT function
+    INSERT INTO DOCUMENTATIONS_CHUNKED (
+        FILE_NAME,
+        CHUNK_NUMBER,
+        CHUNK_TEXT,
+        COMBINED_CHUNK_TEXT
+    )
+    WITH document_lengths AS (
+        SELECT 
+            FILE_NAME,
+            CONTENTS,
+            CEIL(LENGTH(CONTENTS)::FLOAT / 3000) as num_chunks
+        FROM DOCUMENTATIONS d
+        WHERE NOT EXISTS (
+            SELECT 1 FROM DOCUMENTATIONS_CHUNKED dc
+            WHERE dc.FILE_NAME = d.FILE_NAME
+        )
+    ),
+    chunk_ranges AS (
+        SELECT 
+            FILE_NAME,
+            CONTENTS,
+            CHUNK_NUMBER,
+            1 + ((CHUNK_NUMBER - 1) * 3000) as chunk_start,
+            LEAST(LENGTH(CONTENTS), CHUNK_NUMBER * 3000) as chunk_end
+        FROM document_lengths,
+        TABLE(GENERATOR(rowcount => 100)) -- Adjust based on max expected chunks
+        WHERE CHUNK_NUMBER <= num_chunks
+    )
+    SELECT 
+        FILE_NAME,
+        CHUNK_NUMBER,
+        SUBSTRING(CONTENTS, chunk_start, chunk_end - chunk_start + 1) as CHUNK_TEXT,
+        CONCAT('Content from document [', FILE_NAME, ']: ', 
+               SUBSTRING(CONTENTS, chunk_start, chunk_end - chunk_start + 1)) as COMBINED_CHUNK_TEXT
+    FROM chunk_ranges;
+
+    -- Generate embeddings for new chunks
+    INSERT INTO DOCUMENTATIONS_CHUNKED_VECTORS (
+        FILE_NAME,
+        CHUNK_NUMBER,
+        CHUNK_TEXT,
+        COMBINED_CHUNK_TEXT,
+        COMBINED_CHUNK_VECTOR
+    )
+    SELECT 
+        dc.FILE_NAME,
+        dc.CHUNK_NUMBER,
+        dc.CHUNK_TEXT,
+        dc.COMBINED_CHUNK_TEXT,
+        SNOWFLAKE.CORTEX.EMBED_TEXT_768(
+            'snowflake-arctic-embed-m-v1.5',
+            dc.COMBINED_CHUNK_TEXT
+        ) as COMBINED_CHUNK_VECTOR
+    FROM DOCUMENTATIONS_CHUNKED dc
+    LEFT JOIN DOCUMENTATIONS_CHUNKED_VECTORS dcv
+        ON dc.FILE_NAME = dcv.FILE_NAME
+        AND dc.CHUNK_NUMBER = dcv.CHUNK_NUMBER
+    WHERE dcv.FILE_NAME IS NULL;
+
+    -- Return success result
+    SELECT OBJECT_CONSTRUCT(
+        'status', 'success',
+        'message', 'Content sync completed successfully',
+        'rows_processed', rows_inserted
+    ) INTO :result;
+
+    RETURN result;
+
+EXCEPTION
+    WHEN OTHER THEN
+        SELECT OBJECT_CONSTRUCT(
+            'status', 'error',
+            'message', 'Content sync failed: ' || SQLERRM,
+            'error_code', SQLCODE,
+            'error_state', SQLSTATE
+        ) INTO :result;
+        RETURN result;
 END;
+$$;
