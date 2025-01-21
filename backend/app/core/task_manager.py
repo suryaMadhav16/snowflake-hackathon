@@ -3,11 +3,10 @@ import uuid
 import logging
 from typing import Dict, List, Optional, Set
 from datetime import datetime
-from .websocket_manager import WebSocketManager
-from .url_discovery import URLDiscoveryManager
-from ..database.snowflake_manager import SnowflakeManager
-from .storage_manager import StorageManager
-from ..api.schemas import CrawlerSettings, CrawlTask, DiscoveryTask
+from core.url_discovery import URLDiscoveryManager
+from database.snowflake_manager import SnowflakeManager
+from core.storage_manager import StorageManager
+from api.schemas import CrawlerSettings, CrawlTask, DiscoveryTask
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
 logger = logging.getLogger(__name__)
@@ -17,11 +16,9 @@ class TaskManager:
     
     def __init__(
         self,
-        snowflake: SnowflakeManager,
-        websocket_manager: WebSocketManager
+        snowflake: SnowflakeManager
     ):
         self.snowflake = snowflake
-        self.websocket_manager = websocket_manager
         self.active_tasks: Dict[str, CrawlTask] = {}
         self.discovery_tasks: Dict[str, DiscoveryTask] = {}
         self._lock = asyncio.Lock()
@@ -102,30 +99,12 @@ class TaskManager:
             except Exception as e:
                 logger.error(f"Error saving discovery results: {str(e)}")
             
-            # Broadcast completion
-            await self.websocket_manager.broadcast_progress(
-                task.task_id,
-                {
-                    'progress': 1.0,
-                    'status': 'completed',
-                    'total_urls': task.total_urls
-                }
-            )
-            
         except Exception as e:
             error_message = f"Discovery error: {str(e)}"
             logger.error(error_message)
             task.status = "failed"
             task.error = error_message
             task.updated_at = datetime.now()
-            
-            await self.websocket_manager.broadcast_progress(
-                task.task_id,
-                {
-                    'status': 'failed',
-                    'error': error_message
-                }
-            )
         
         finally:
             # Clean up task after some time
@@ -154,7 +133,13 @@ class TaskManager:
                 "urls_per_second": 0.0,
                 "memory_usage": 0,
                 "batch_processing_time": 0.0,
-                "total_processing_time": 0.0
+                "total_processing_time": 0.0,
+                "saved_content": {
+                    "markdown": 0,
+                    "images": 0,
+                    "pdf": 0,
+                    "screenshot": 0
+                }
             },
             error=None,
             created_at=datetime.now(),
@@ -185,19 +170,68 @@ class TaskManager:
         return task
     
     async def get_task(self, task_id: str) -> Optional[CrawlTask]:
-        """Get task by ID"""
-        return self.active_tasks.get(task_id)
+        """Get task by ID from memory or database"""
+        # First check memory
+        logger.info(f"Checking task {task_id} in memory---------")
+        task = self.active_tasks.get(task_id)
+        if task:
+            return task
+
+        # Then check database
+        db_task = await self.snowflake.get_task(task_id)
+        if db_task:
+            task = CrawlTask(
+                task_id=db_task['task_id'],
+                urls=db_task['urls'],
+                settings=db_task['settings'],
+                status=db_task['status'],
+                progress=db_task['progress'],
+                metrics=db_task['metrics'],
+                error=db_task['error'],
+                created_at=db_task['created_at'],
+                updated_at=db_task['updated_at']
+            )
+            return task
+
+        return None
     
     async def get_discovery_task(self, task_id: str) -> Optional[DiscoveryTask]:
-        """Get discovery task by ID"""
-        return self.discovery_tasks.get(task_id)
+        """Get discovery task by ID from memory or database"""
+        # First check memory
+        task = self.discovery_tasks.get(task_id)
+        if task:
+            return task
+
+        # Then check database
+        db_task = await self.snowflake.get_task(task_id)
+        if db_task and db_task['task_type'] == 'discovery':
+            discovery_result = await self.snowflake.get_discovery_result(task_id)
+            if discovery_result:
+                task = DiscoveryTask(
+                    task_id=db_task['task_id'],
+                    start_url=discovery_result['start_url'],
+                    mode=db_task.get('settings', {}).get('mode', 'full'),
+                    settings=db_task['settings'],
+                    status=db_task['status'],
+                    progress=db_task['progress'],
+                    discovered_urls=discovery_result['discovered_urls'],
+                    total_urls=discovery_result['total_urls'],
+                    max_depth=discovery_result['max_depth'],
+                    url_graph=discovery_result['url_graph'],
+                    error=db_task['error'],
+                    created_at=db_task['created_at'],
+                    updated_at=db_task['updated_at']
+                )
+                return task
+
+        return None
     
     async def update_task(
         self,
         task_id: str,
         updates: Dict
     ) -> Optional[CrawlTask]:
-        """Update task attributes"""
+        """Update task attributes and persist to database"""
         task = await self.get_task(task_id)
         if not task:
             return None
@@ -205,24 +239,27 @@ class TaskManager:
         async with self._lock:
             for key, value in updates.items():
                 if hasattr(task, key):
-                    setattr(task, key, value)
+                    if key == "metrics" and isinstance(value, dict):
+                        # Merge metrics rather than replace
+                        current_metrics = getattr(task, key, {})
+                        current_metrics.update(value)
+                        setattr(task, key, current_metrics)
+                    else:
+                        setattr(task, key, value)
             task.updated_at = datetime.now()
             
-            # Broadcast updates
-            if 'metrics' in updates:
-                await self.websocket_manager.broadcast_metrics(
-                    task_id,
-                    task.metrics
-                )
-            
-            if 'progress' in updates:
-                await self.websocket_manager.broadcast_progress(
-                    task_id,
-                    {
-                        'progress': task.progress,
-                        'status': task.status
-                    }
-                )
+            # Save to database
+            await self.snowflake.save_task({
+                'task_id': task.task_id,
+                'task_type': 'crawl',
+                'status': task.status,
+                'progress': task.progress,
+                'metrics': task.metrics,
+                'error': task.error,
+                'current_url': getattr(task, 'current_url', None),
+                'urls': task.urls,
+                'settings': task.settings.dict() if task.settings else {}
+            })
         
         return task
     
@@ -356,7 +393,6 @@ class TaskManager:
                         await self.update_task(task.task_id, {
                             "progress": processed_urls / total_urls,
                             "metrics": {
-                                **task.metrics,
                                 "urls_per_second": processed_urls / total_duration if total_duration > 0 else 0,
                                 "batch_processing_time": batch_duration,
                                 "total_processing_time": total_duration
@@ -385,5 +421,5 @@ class TaskManager:
         finally:
             # Clean up task after some time
             await asyncio.sleep(3600)  # Keep task info for 1 hour
-            async with self._lock:
-                self.active_tasks.pop(task.task_id, None)
+            # async with self._lock:
+            #     self.active_tasks.pop(task.task_id, None)

@@ -1,20 +1,22 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, List, Optional
 import logging
-import asyncio
-import datetime
-from app.core.config import settings
-from app.database.snowflake_manager import SnowflakeManager
-from app.core.task_manager import TaskManager
-from app.core.storage_manager import StorageManager
-from app.core.websocket_manager import WebSocketManager
-from app.api.schemas import CrawlerSettings, CrawlTask, CrawlResult
+from pydantic import BaseModel
+from datetime import datetime
+
+from core.config import settings
+from database.snowflake_manager import SnowflakeManager
+from core.task_manager import TaskManager
+from core.storage_manager import StorageManager
+from api.schemas import CrawlerSettings, CrawlTask, CrawlResult
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Global managers
-websocket_manager = WebSocketManager()
+class DiscoveryRequest(BaseModel):
+    url: str
+    mode: str = "full"
+    settings: Optional[CrawlerSettings] = None
 
 # Dependencies
 async def get_snowflake():
@@ -25,7 +27,7 @@ async def get_task_manager(
     snowflake: SnowflakeManager = Depends(get_snowflake)
 ) -> TaskManager:
     """Get task manager instance"""
-    return TaskManager(snowflake, websocket_manager)
+    return TaskManager(snowflake)
 
 async def get_storage_manager(
     snowflake: SnowflakeManager = Depends(get_snowflake)
@@ -36,16 +38,12 @@ async def get_storage_manager(
 # Core Routes
 @router.post("/discover")
 async def discover_urls(
-    url: str,
-    mode: str = "full",
-    settings: Optional[CrawlerSettings] = None,
+    request: DiscoveryRequest,
     task_manager: TaskManager = Depends(get_task_manager)
 ) -> Dict:
-    """Discover URLs from target site"""
+    """Start URL discovery process"""
     try:
-        # Create discovery task
-        task = await task_manager.discover_urls(url, mode, settings)
-        
+        task = await task_manager.discover_urls(request.url, request.mode, request.settings)
         return {
             "task_id": task.task_id,
             "status": task.status,
@@ -63,10 +61,8 @@ async def start_crawling(
 ) -> Dict:
     """Start crawling process"""
     try:
-        # Create and start crawling task
         task = await task_manager.create_task(urls, settings)
         started_task = await task_manager.start_task(task.task_id)
-        
         return {
             "task_id": started_task.task_id,
             "status": started_task.status,
@@ -84,6 +80,7 @@ async def get_status(
     """Get current task status"""
     try:
         # Check crawl task
+        logger.debug(f"Checking status for task_id: {task_id}")
         task = await task_manager.get_task(task_id)
         if task:
             return {
@@ -92,7 +89,9 @@ async def get_status(
                 "status": task.status,
                 "progress": task.progress,
                 "metrics": task.metrics,
-                "error": task.error
+                "error": task.error,
+                "current_url": getattr(task, 'current_url', None),
+                "updated_at": task.updated_at.isoformat()
             }
             
         # Check discovery task
@@ -104,7 +103,9 @@ async def get_status(
                 "status": task.status,
                 "progress": task.progress,
                 "total_urls": len(task.discovered_urls) if task.discovered_urls else 0,
-                "error": task.error
+                "current_url": getattr(task, 'current_url', None),
+                "error": task.error,
+                "updated_at": task.updated_at.isoformat()
             }
             
         raise HTTPException(status_code=404, detail="Task not found")
@@ -174,7 +175,7 @@ async def get_file_content(
         content = await storage.get_file(url, file_type)
         if not content:
             raise HTTPException(status_code=404, detail="File not found")
-            
+        
         return {
             "url": url,
             "file_type": file_type,
@@ -184,88 +185,6 @@ async def get_file_content(
         raise
     except Exception as e:
         logger.error(f"Error getting file content: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# WebSocket endpoints
-
-@router.websocket("/ws/debug")
-async def websocket_debug(websocket: WebSocket):
-    """Debug endpoint for testing WebSocket connectivity"""
-    try:
-        await websocket.accept()
-        await websocket.send_json({
-            "status": "connected",
-            "message": "WebSocket debug connection established",
-            "time": datetime.datetime.now().isoformat()
-        })
-        
-        try:
-            while True:
-                # Send heartbeat every 5 seconds
-                await asyncio.sleep(5)
-                await websocket.send_json({
-                    "type": "heartbeat",
-                    "time": datetime.datetime.now().isoformat()
-                })
-        except WebSocketDisconnect:
-            logger.info("Debug WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"Debug WebSocket error: {str(e)}")
-        if websocket.client_state.connected:
-            await websocket.close()
-
-
-@router.websocket("/ws/metrics/{task_id}")
-async def websocket_metrics(
-    websocket: WebSocket,
-    task_id: str
-):
-    """Stream metrics updates"""
-    try:
-        await websocket_manager.connect("metrics", websocket)
-        try:
-            while True:
-                await asyncio.sleep(1)
-        except WebSocketDisconnect:
-            await websocket_manager.disconnect("metrics", websocket)
-            logger.info(f"Metrics WebSocket disconnected for task {task_id}")
-    except Exception as e:
-        logger.error(f"Metrics WebSocket error: {str(e)}")
-        if websocket.client_state.connected:
-            await websocket.close()
-
-@router.websocket("/ws/progress/{task_id}")
-async def websocket_progress(
-    websocket: WebSocket,
-    task_id: str
-):
-    """Stream progress updates"""
-    try:
-        await websocket_manager.connect("progress", websocket)
-        try:
-            while True:
-                await asyncio.sleep(0.5)
-        except WebSocketDisconnect:
-            await websocket_manager.disconnect("progress", websocket)
-            logger.info(f"Progress WebSocket disconnected for task {task_id}")
-    except Exception as e:
-        logger.error(f"Progress WebSocket error: {str(e)}")
-        if websocket.client_state.connected:
-            await websocket.close()
-
-# Stats endpoint
-@router.get("/ws/status")
-async def websocket_status() -> Dict:
-    """Get WebSocket connection status"""
-    try:
-        status = websocket_manager.get_connection_status()
-        return {
-            "status": "ok",
-            "connections": status,
-            "server_time": datetime.datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Error getting WebSocket status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/stats")

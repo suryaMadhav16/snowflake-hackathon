@@ -2,10 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import logging
+import sys
+import os
+import uvicorn
+from contextlib import asynccontextmanager
 
-from .core.config import settings
-from .database.snowflake_manager import SnowflakeManager
-from .api.routes import router as api_router
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from core.config import settings
+from database.snowflake_manager import SnowflakeManager
+from api.routes import router as api_router
 
 logger = logging.getLogger(__name__)
 
@@ -43,32 +49,25 @@ async def root():
         "docs": f"/api/{settings.API_VERSION}/docs"
     }
 
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle manager for the FastAPI application"""
     try:
-        # Initialize Snowflake environment
+        # Startup logic
         snowflake = SnowflakeManager()
         # await snowflake.initialize_environment()
         logger.info("Snowflake environment initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {str(e)}")
-        # We allow the application to start even if initialization fails
-        # This way we can fix issues while the app is running
-
-# Shutdown event
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    try:
-        # Close any active Snowflake connections
-        snowflake = SnowflakeManager()
+        yield
+        # Shutdown logic
         snowflake.close()
         logger.info("Application shutdown complete")
     except Exception as e:
-        logger.error(f"Error during shutdown: {str(e)}")
-
+        logger.error(f"Application lifecycle error: {str(e)}")
+        yield
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="localhost", port=8000, reload=True)
+    uvicorn.run(
+        "main:app",  # Use import string format
+        host="localhost", 
+        port=8000, 
+        reload=True
+    )

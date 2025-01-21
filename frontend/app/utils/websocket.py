@@ -15,6 +15,7 @@ class WebSocketClient:
     def __init__(self, base_url: str):
         """Initialize WebSocket client with base URL"""
         self.base_url = base_url.rstrip('/')
+        # Convert HTTP URL to WebSocket URL
         if self.base_url.startswith('http'):
             self.base_url = f"ws{'s' if 'https' in self.base_url else ''}://{self.base_url.split('://', 1)[1]}"
         logger.debug(f"WebSocket base URL: {self.base_url}")
@@ -23,19 +24,20 @@ class WebSocketClient:
         self.connection_status = {}
         self.active = True
     
-    @property
-    def api_url(self) -> str:
-        """Get base API URL with proper WebSocket protocol"""
-        base = self.base_url
-        if base.startswith('http://'):
-            base = base.replace('http://', 'ws://')
-        elif base.startswith('https://'):
-            base = base.replace('https://', 'wss://')
-        return f"{base}/api/{self.api_version}"
+    def _get_ws_url(self, endpoint: str) -> str:
+        """Construct WebSocket URL"""
+        return f"{self.base_url}/api/{self.api_version}/{endpoint}"
+    
+    def _update_status(self, connection_type: str, status: Dict):
+        """Update connection status"""
+        current = self.get_connection_status(connection_type)
+        current.update(status)
+        self.connection_status[connection_type] = current
+        logger.debug(f"Updated {connection_type} status: {current}")
     
     def get_connection_status(self, connection_type: str) -> Dict:
         """Get connection status"""
-        status = self.connection_status.get(connection_type, {
+        return self.connection_status.get(connection_type, {
             "connected": False,
             "last_error": None,
             "last_message_time": None,
@@ -47,165 +49,34 @@ class WebSocketClient:
             "total_messages": 0,
             "connection_attempts": 0
         })
-        
-        # Add connection URL if available
-        if connection_type in self.connections:
-            ws = self.connections[connection_type]
-            status["connection_url"] = str(ws.url) if hasattr(ws, 'url') else None
-        
-        return status
     
-    def _update_status(self, connection_type: str, status: Dict):
-        """Update connection status"""
-        current = self.get_connection_status(connection_type)
-        current.update(status)
-        self.connection_status[connection_type] = current
-        logger.debug(f"Updated {connection_type} status: {current}")
-    
-    async def connect_metrics(
-        self,
-        task_id: str,
-        callback: Callable[[Dict], None]
-    ):
+    async def connect_metrics(self, task_id: str, callback: Callable[[Dict], None]):
         """Connect to metrics WebSocket"""
-        uri = f"{self.api_url}/ws/metrics/{task_id}"
+        uri = self._get_ws_url(f"ws/metrics/{task_id}")
         logger.debug(f"Connecting to metrics WebSocket at {uri}")
         await self._connect("metrics", uri, callback)
     
-    async def connect_progress(
-        self,
-        task_id: str,
-        callback: Callable[[Dict], None]
-    ):
+    async def connect_progress(self, task_id: str, callback: Callable[[Dict], None]):
         """Connect to progress WebSocket"""
-        uri = f"{self.api_url}/ws/progress/{task_id}"
+        uri = self._get_ws_url(f"ws/progress/{task_id}")
         logger.debug(f"Connecting to progress WebSocket at {uri}")
         await self._connect("progress", uri, callback)
     
-    async def _connect(
-        self,
-        connection_type: str,
-        uri: str,
-        callback: Callable[[Dict], None]
-    ):
-        """Create and maintain WebSocket connection"""
-        retry_count = 0
-        max_retries = 5
-        initial_retry_delay = 1.0  # seconds
-        
-        while self.active:
-            try:
-                logger.debug(f"Attempting to connect to {connection_type} WebSocket ({retry_count + 1}/{max_retries if max_retries else 'unlimited'})")
-                self._update_status(connection_type, {
-                    "connection_attempts": retry_count + 1,
-                    "connecting": True,
-                    "last_attempt": time.time()
-                })
-                
-                async with websockets.connect(uri) as websocket:
-                    self.connections[connection_type] = websocket
-                    connect_time = time.time()
-                    self._update_status(connection_type, {
-                        "connected": True,
-                        "connecting": False,
-                        "connected_at": connect_time,
-                        "last_error": None,
-                        "connection_url": str(websocket.url),
-                        "connection_id": id(websocket),
-                        "client_info": {
-                            "local_address": websocket.local_address if hasattr(websocket, 'local_address') else None,
-                            "remote_address": websocket.remote_address if hasattr(websocket, 'remote_address') else None,
-                        }
-                    })
-                    logger.info(f"Successfully connected to {connection_type} WebSocket")
-                    
-                    try:
-                        async for message in websocket:
-                            if not self.active:
-                                break
-                            
-                            try:
-                                data = json.loads(message)
-                                self._update_status(connection_type, {
-                                    "last_message_time": time.time(),
-                                    "total_messages": self.get_connection_status(connection_type)["total_messages"] + 1
-                                })
-                                callback(data)
-                            except json.JSONDecodeError as e:
-                                logger.error(f"Failed to parse WebSocket message: {str(e)}")
-                                self._update_status(connection_type, {"last_error": f"Message parse error: {str(e)}"})
-                    
-                    except ConnectionClosed as e:
-                        logger.warning(f"{connection_type} WebSocket connection closed: {str(e)}")
-                        self._update_status(connection_type, {
-                            "connected": False,
-                            "last_error": f"Connection closed: {str(e)}"
-                        })
-                    
-                    except Exception as e:
-                        logger.error(f"Error in WebSocket message loop: {str(e)}")
-                        self._update_status(connection_type, {
-                            "connected": False,
-                            "last_error": str(e)
-                        })
-            
-            except InvalidStatusCode as e:
-                logger.error(f"Invalid status code from WebSocket server: {str(e)}")
-                self._update_status(connection_type, {
-                    "connected": False,
-                    "last_error": f"Invalid status code: {e.status_code}"
-                })
-            
-            except InvalidMessage as e:
-                logger.error(f"Invalid WebSocket message: {str(e)}")
-                self._update_status(connection_type, {
-                    "connected": False,
-                    "last_error": "Invalid message format"
-                })
-            
-            except ConnectionRefusedError as e:
-                logger.error(f"WebSocket connection refused: {str(e)}")
-                self._update_status(connection_type, {
-                    "connected": False,
-                    "last_error": "Connection refused"
-                })
-            
-            except Exception as e:
-                logger.error(f"Unexpected WebSocket error: {str(e)}")
-                self._update_status(connection_type, {
-                    "connected": False,
-                    "last_error": str(e)
-                })
-            
-            finally:
-                self.connections.pop(connection_type, None)
-            
-            if not self.active:
-                break
-            
-            retry_count += 1
-            if max_retries and retry_count >= max_retries:
-                logger.error(f"Maximum retry attempts ({max_retries}) reached for {connection_type} WebSocket")
-                self._update_status(connection_type, {
-                    "retry_count": retry_count,
-                    "last_error": f"Maximum retries ({max_retries}) reached"
-                })
-                break
-            
-            # Exponential backoff with jitter
-            delay = min(initial_retry_delay * (2 ** (retry_count - 1)), 30)  # Max 30 seconds
-            jitter = delay * 0.1  # 10% jitter
-            delay = delay + (asyncio.get_event_loop().time() % jitter)
-            logger.debug(f"Retrying {connection_type} WebSocket connection in {delay:.2f} seconds")
-            await asyncio.sleep(delay)
-    
     async def test_connection(self) -> bool:
         """Test WebSocket connectivity using debug endpoint"""
-        uri = f"{self.api_url}/ws/debug"
+        uri = self._get_ws_url("ws/debug")
         logger.debug(f"Testing WebSocket connection at {uri}")
         
         try:
             async with websockets.connect(uri) as websocket:
+                # Set initial connection info
+                self._update_status("debug", {
+                    "connected": True,
+                    "connecting": False,
+                    "connected_at": time.time(),
+                    "connection_url": uri
+                })
+                
                 # Wait for initial connection message
                 message = await websocket.recv()
                 data = json.loads(message)
@@ -219,12 +90,102 @@ class WebSocketClient:
                     
         except Exception as e:
             logger.error(f"WebSocket test connection failed: {str(e)}")
+            self._update_status("debug", {
+                "connected": False,
+                "last_error": str(e)
+            })
             return False
+    
+    async def _connect(self, connection_type: str, uri: str, callback: Callable[[Dict], None]):
+        """Create and maintain WebSocket connection"""
+        retry_count = 0
+        max_retries = 5
+        initial_retry_delay = 1.0
+        
+        while self.active and (retry_count < max_retries):
+            try:
+                logger.debug(f"Attempting to connect to {connection_type} WebSocket ({retry_count + 1}/{max_retries})")
+                self._update_status(connection_type, {
+                    "connection_attempts": retry_count + 1,
+                    "connecting": True,
+                    "last_attempt": time.time(),
+                    "connection_url": uri
+                })
+                
+                async with websockets.connect(uri) as websocket:
+                    # Store the connection
+                    self.connections[connection_type] = websocket
+                    connect_time = time.time()
+                    
+                    # Update status with connection info
+                    self._update_status(connection_type, {
+                        "connected": True,
+                        "connecting": False,
+                        "connected_at": connect_time,
+                        "last_error": None,
+                        "connection_id": id(websocket)
+                    })
+                    
+                    logger.info(f"Successfully connected to {connection_type} WebSocket")
+                    
+                    # Message processing loop
+                    try:
+                        async for message in websocket:
+                            if not self.active:
+                                break
+                                
+                            try:
+                                data = json.loads(message)
+                                self._update_status(connection_type, {
+                                    "last_message_time": time.time(),
+                                    "total_messages": self.get_connection_status(connection_type)["total_messages"] + 1
+                                })
+                                await callback(data)
+                            except json.JSONDecodeError as e:
+                                logger.error(f"Failed to parse WebSocket message: {str(e)}")
+                                self._update_status(connection_type, {
+                                    "last_error": f"Message parse error: {str(e)}"
+                                })
+                    
+                    except ConnectionClosed as e:
+                        logger.warning(f"{connection_type} WebSocket connection closed: {str(e)}")
+                        self._update_status(connection_type, {
+                            "connected": False,
+                            "last_error": f"Connection closed: {str(e)}"
+                        })
+                        raise  # Propagate to trigger retry
+            
+            except Exception as e:
+                logger.error(f"WebSocket error ({connection_type}): {str(e)}")
+                self._update_status(connection_type, {
+                    "connected": False,
+                    "last_error": str(e)
+                })
+                
+                retry_count += 1
+                if retry_count < max_retries:
+                    # Exponential backoff with jitter
+                    delay = min(initial_retry_delay * (2 ** (retry_count - 1)), 30)
+                    jitter = delay * 0.1
+                    delay = delay + (asyncio.get_event_loop().time() % jitter)
+                    logger.debug(f"Retrying {connection_type} WebSocket in {delay:.2f}s ({retry_count}/{max_retries})")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"Max retries ({max_retries}) reached for {connection_type} WebSocket")
+                    self._update_status(connection_type, {
+                        "retry_count": retry_count,
+                        "last_error": f"Maximum retries ({max_retries}) reached"
+                    })
+            finally:
+                # Clean up connection reference
+                self.connections.pop(connection_type, None)
     
     async def disconnect(self, connection_type: Optional[str] = None):
         """Disconnect WebSocket connection(s)"""
         self.active = False
+        
         if connection_type:
+            # Disconnect specific connection
             websocket = self.connections.get(connection_type)
             if websocket:
                 await websocket.close()
@@ -234,9 +195,10 @@ class WebSocketClient:
                     "last_error": "Disconnected by client"
                 })
         else:
-            for type_, websocket in self.connections.items():
+            # Disconnect all connections
+            for conn_type, websocket in self.connections.items():
                 await websocket.close()
-                self._update_status(type_, {
+                self._update_status(conn_type, {
                     "connected": False,
                     "last_error": "Disconnected by client"
                 })

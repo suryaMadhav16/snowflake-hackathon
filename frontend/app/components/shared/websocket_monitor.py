@@ -68,7 +68,7 @@ def render_websocket_status():
     
     # Show base WebSocket URL
     ws_client = st.session_state.ws_client
-    st.sidebar.code(ws_client.api_url, language="text")
+    # st.sidebar.code(ws_client.api_url, language="text")
     
     # Check connections
     metrics_status = ws_client.get_connection_status("metrics")

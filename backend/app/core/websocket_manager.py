@@ -20,18 +20,41 @@ class WebSocketManager:
         logger.debug(f"Attempting to connect {connection_type} WebSocket from {websocket.client.host}")
         if connection_type not in self.active_connections:
             raise ValueError(f"Invalid connection type: {connection_type}")
-            
+        
+        # Clean up any existing connections of this type
+        await self.cleanup_connections(connection_type)
+        
         await websocket.accept()
         logger.debug(f"WebSocket accepted for {connection_type}")
         async with self._lock:
             self.active_connections[connection_type].add(websocket)
+            
         logger.info(f"New {connection_type} WebSocket connection. Total connections: {self.get_connection_count(connection_type)}")
-        await websocket.send_json({
-            "status": "connected",
-            "type": connection_type,
-            "connection_id": id(websocket),
-            "client_host": websocket.client.host
-        })
+        
+        # Send initial connection confirmation
+        try:
+            await websocket.send_json({
+                "status": "connected",
+                "type": connection_type,
+                "connection_id": id(websocket),
+                "message": "WebSocket connection established"
+            })
+        except Exception as e:
+            logger.error(f"Error sending connection confirmation: {str(e)}")
+            
+    async def cleanup_connections(self, connection_type: str):
+        """Clean up existing connections of a type"""
+        try:
+            async with self._lock:
+                connections = self.active_connections.get(connection_type, set()).copy()
+                for websocket in connections:
+                    try:
+                        await websocket.close()
+                    except Exception as e:
+                        logger.error(f"Error closing websocket: {str(e)}")
+                self.active_connections[connection_type].clear()
+        except Exception as e:
+            logger.error(f"Error cleaning up connections: {str(e)}")
     
     async def disconnect(self, connection_type: str, websocket: WebSocket):
         """Disconnect a WebSocket client"""

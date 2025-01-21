@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "debugpy",
+        "request": "launch",
+        "name": "Launch Backend",
+        "program": "${workspaceFolder}/backend/app/main.py",        
+        "console": "integratedTerminal",
+        "envFile": "${workspaceFolder}/backend/.env",
+        "cwd": "${workspaceFolder}/backend"
+      },
+      {
+        "type": "debugpy",
+        "request": "launch",
+        "name": "Launch Frontend",
+        "program": "${workspaceFolder}/frontend/app/main.py",
+        "console": "integratedTerminal",
+        "envFile": "${workspaceFolder}/.env"
+      }
+    ],
+    "inputs": [
+      {
+        "type": "promptString",
+        "id": "backendEnvFile",
+        "description": "Path to the backend environment file"
+      },
+      {
+        "type": "promptString",
+        "id": "frontendEnvFile",
+        "description": "Path to the frontend environment file"
+      }
+    ]
+  }

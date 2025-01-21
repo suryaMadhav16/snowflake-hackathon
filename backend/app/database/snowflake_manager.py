@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Union
 from datetime import datetime
 import snowflake.connector
 from snowflake.connector.errors import ProgrammingError, DatabaseError
-from ..core.config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -69,56 +69,136 @@ class SnowflakeManager:
         finally:
             if 'cur' in locals():
                 cur.close()
-    
-    async def execute_file(self, file_path: str):
-        """Execute SQL file"""
+
+    async def save_task(self, task: Dict) -> bool:
+        """Save task state"""
         try:
-            # Read SQL file
-            with open(file_path, 'r') as file:
-                sql_content = file.read()
-                
-            # Split into individual commands
-            sql_commands = [cmd.strip() for cmd in sql_content.split(';') if cmd.strip()]
+            logger.debug(f"Saving task state: {task}")
+            query = """
+                MERGE INTO LLM.RAG.tasks t
+                USING (SELECT %(task_id)s as task_id) s
+                ON t.task_id = s.task_id
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        status = %(status)s,
+                        progress = %(progress)s,
+                        metrics = PARSE_JSON(%(metrics)s),
+                        error = %(error)s,
+                        current_url = %(current_url)s,
+                        updated_at = CURRENT_TIMESTAMP(),
+                        completed_at = CASE 
+                            WHEN %(status)s IN ('completed', 'failed') 
+                            THEN CURRENT_TIMESTAMP() 
+                            ELSE completed_at 
+                        END
+                WHEN NOT MATCHED THEN
+                    INSERT (
+                        task_id, task_type, status, progress,
+                        settings, metrics, error, current_url,
+                        urls, created_at, updated_at
+                    ) VALUES (
+                        %(task_id)s, %(task_type)s, %(status)s, %(progress)s,
+                        PARSE_JSON(%(settings)s), PARSE_JSON(%(metrics)s),
+                        %(error)s, %(current_url)s, PARSE_JSON(%(urls)s),
+                        CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()
+                    )
+            """
             
-            # Execute each command
-            for command in sql_commands:
-                try:
-                    await self.execute_query(command, fetch=False)
-                except Exception as e:
-                    logger.error(f"Error executing command: {command[:100]}...")
-                    logger.error(f"Error details: {str(e)}")
-                    raise
+            params = {
+                'task_id': task['task_id'],
+                'task_type': task.get('task_type', 'crawl'),
+                'status': task['status'],
+                'progress': task.get('progress', 0.0),
+                'settings': json.dumps(task.get('settings', {})),
+                'metrics': json.dumps(task.get('metrics', {})),
+                'error': task.get('error'),
+                'current_url': task.get('current_url'),
+                'urls': json.dumps(task.get('urls', []))
+            }
             
-            logger.info(f"Successfully executed SQL file: {file_path}")
+            await self.execute_query(query, params, fetch=False)
+            return True
         except Exception as e:
-            logger.error(f"Error executing SQL file: {str(e)}")
-            raise
-    
-    async def initialize_environment(self):
-        """Initialize Snowflake environment"""
+            logger.error(f"Error saving task: {str(e)}")
+            return False
+
+    async def get_task(self, task_id: str) -> Optional[Dict]:
+        """Get task state from database"""
         try:
-            # Get the path to init.sql
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            init_sql_path = os.path.join(current_dir, 'init.sql')
+            logger.debug(f"Getting task state for {task_id}")
+            query = """
+                SELECT
+                    task_id,
+                    task_type,
+                    status,
+                    progress,
+                    settings,
+                    metrics,
+                    error,
+                    current_url,
+                    urls,
+                    created_at,
+                    updated_at,
+                    completed_at
+                FROM LLM.RAG.tasks
+                WHERE task_id = %(task_id)s
+            """
             
-            # Execute initialization script
-            await self.execute_file(init_sql_path)
-            logger.info("Successfully initialized Snowflake environment")
-            
+            results = await self.execute_query(query, {'task_id': task_id})
+            if results:
+                task = results[0]
+                logger.debug(f"Found task: {task}")
+                return task
+            logger.debug("Task not found")
+            return None
         except Exception as e:
-            logger.error(f"Error initializing Snowflake environment: {str(e)}")
-            raise
+            logger.error(f"Error getting task: {str(e)}")
+            return None
+
+    async def list_active_tasks(self) -> List[Dict]:
+        """Get all active tasks"""
+        try:
+            query = """
+                SELECT
+                    task_id,
+                    task_type,
+                    status,
+                    progress,
+                    metrics,
+                    error,
+                    current_url,
+                    updated_at
+                FROM LLM.RAG.tasks
+                WHERE status NOT IN ('completed', 'failed')
+                ORDER BY created_at DESC
+            """
+            
+            return await self.execute_query(query)
+        except Exception as e:
+            logger.error(f"Error listing active tasks: {str(e)}")
+            return []
     
     async def save_discovery_result(self, result: Dict) -> bool:
         """Save URL discovery result"""
         try:
-            database = self.config['database']
-            schema = self.config['sfschema']
-            logger.info(f"Saving discovery result for task_id: {result['task_id']}")
-            logger.info(database)
-            logger.info(schema)
-            q = f"MERGE INTO {database}.{schema}.discovery_results t"
-            query = q + """                 
+            # First save task state
+            task_state = {
+                "task_id": result["task_id"],
+                "task_type": "discovery",
+                "status": "completed",
+                "progress": 1.0,
+                "metrics": {
+                    "discovered_urls": len(result["discovered_urls"]),
+                    "max_depth": result["max_depth"]
+                },
+                "urls": result["discovered_urls"],
+                "completed_at": result["completed_at"]
+            }
+            await self.save_task(task_state)
+
+            # Then save discovery details
+            query = """
+                MERGE INTO LLM.RAG.discovery_results t
                 USING (SELECT %(task_id)s as task_id) s
                 ON t.task_id = s.task_id
                 WHEN MATCHED THEN 
@@ -158,6 +238,50 @@ class SnowflakeManager:
             logger.error(f"Error saving discovery result: {str(e)}")
             return False
     
+    async def save_crawl_result(self, result: Dict) -> bool:
+        """Save crawl result to Snowflake"""
+        try:
+            query = """
+                MERGE INTO LLM.RAG.crawl_results t 
+                USING (SELECT %(url)s as url) s
+                ON t.url = s.url
+                WHEN MATCHED THEN 
+                    UPDATE SET
+                        success = %(success)s,
+                        html = %(html)s,
+                        cleaned_html = %(cleaned_html)s,
+                        error_message = %(error_message)s,
+                        media_data = PARSE_JSON(%(media_data)s),
+                        links_data = PARSE_JSON(%(links_data)s),
+                        metadata = PARSE_JSON(%(metadata)s)
+                WHEN NOT MATCHED THEN
+                    INSERT (
+                        url, success, html, cleaned_html,
+                        error_message, media_data, links_data, metadata
+                    ) VALUES (
+                        %(url)s, %(success)s, %(html)s, %(cleaned_html)s,
+                        %(error_message)s, PARSE_JSON(%(media_data)s),
+                        PARSE_JSON(%(links_data)s), PARSE_JSON(%(metadata)s)
+                    )
+            """
+            
+            params = {
+                'url': result['url'],
+                'success': result['success'],
+                'html': result.get('html'),
+                'cleaned_html': result.get('cleaned_html'),
+                'error_message': result.get('error_message'),
+                'media_data': json.dumps(result.get('media', {})),
+                'links_data': json.dumps(result.get('links', {})),
+                'metadata': json.dumps(result.get('metadata', {}))
+            }
+            
+            await self.execute_query(query, params, fetch=False)
+            return True
+        except Exception as e:
+            logger.error(f"Error saving crawl result: {str(e)}")
+            return False
+
     async def get_discovery_result(self, task_id: str) -> Optional[Dict]:
         """Get discovery result by task ID"""
         try:
@@ -412,3 +536,4 @@ class SnowflakeManager:
                 self._conn = None
             except Exception as e:
                 logger.error(f"Error closing Snowflake connection: {str(e)}")
+

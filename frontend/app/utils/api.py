@@ -1,8 +1,66 @@
 import httpx
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 import logging
+import asyncio
+import time
 
 logger = logging.getLogger(__name__)
+
+class TaskPoller:
+    """Handles polling for task updates"""
+    
+    def __init__(self, api_client, task_id: str, callback: Callable[[Dict], None]):
+        self.api_client = api_client
+        self.task_id = task_id
+        self.callback = callback
+        self.polling = False
+        self._last_status = None
+        self._error_count = 0
+        self._max_errors = 3
+    
+    def is_complete(self, status: Dict) -> bool:
+        """Check if task is complete based on status"""
+        return (
+            status.get("status") in ["completed", "failed"] or
+            status.get("progress", 0) >= 1.0
+        )
+    
+    async def start(self, interval: float = 1.0):
+        """Start polling"""
+        self.polling = True
+        self._error_count = 0
+        
+        while self.polling:
+            try:
+                status = await self.api_client.get_status(self.task_id)
+                
+                # Only call callback if status changed
+                if status != self._last_status:
+                    self._last_status = status
+                    await self.callback(status)
+                
+                # Check for completion
+                if self.is_complete(status):
+                    self.polling = False
+                    break
+                
+                # Reset error count on successful poll
+                self._error_count = 0
+                
+            except Exception as e:
+                logger.error(f"Polling error: {str(e)}")
+                self._error_count += 1
+                
+                if self._error_count >= self._max_errors:
+                    logger.error("Max polling errors reached")
+                    self.polling = False
+                    break
+            
+            await asyncio.sleep(interval)
+    
+    def stop(self):
+        """Stop polling"""
+        self.polling = False
 
 class FastAPIClient:
     """FastAPI client for interacting with the backend"""
@@ -12,27 +70,59 @@ class FastAPIClient:
         self.base_url = base_url.rstrip('/')
         self.client = httpx.AsyncClient()
         self.api_version = "v1"
+        self.active_pollers: Dict[str, TaskPoller] = {}
     
     @property
     def api_url(self) -> str:
         """Get base API URL"""
         return f"{self.base_url}/api/{self.api_version}"
+
+    async def start_polling(self, task_id: str, callback: Callable[[Dict], None], interval: float = 1.0):
+        """Start polling for task updates"""
+        if task_id in self.active_pollers:
+            self.active_pollers[task_id].stop()
+        
+        poller = TaskPoller(self, task_id, callback)
+        self.active_pollers[task_id] = poller
+        asyncio.create_task(poller.start(interval))
+    
+    async def stop_polling(self, task_id: Optional[str] = None):
+        """Stop polling for specific task or all tasks"""
+        if task_id:
+            if task_id in self.active_pollers:
+                self.active_pollers[task_id].stop()
+                del self.active_pollers[task_id]
+        else:
+            for poller in self.active_pollers.values():
+                poller.stop()
+            self.active_pollers.clear()
     
     async def discover_urls(
         self,
         url: str,
         mode: str = "full",
-        settings: Optional[Dict] = None
+        settings: Optional[Dict] = None,
+        on_update: Optional[Callable[[Dict], None]] = None
     ) -> Dict:
-        """Start URL discovery process"""
+        """Start URL discovery process with optional status updates"""
         try:
             response = await self.client.post(
                 f"{self.api_url}/discover",
-                params={"url": url, "mode": mode},
-                json={"settings": settings} if settings else None
+                json={
+                    "url": url,
+                    "mode": mode,
+                    "settings": settings
+                }
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            
+            # Start polling if callback provided
+            if on_update and result.get("task_id"):
+                await self.start_polling(result["task_id"], on_update)
+            
+            return result
+            
         except Exception as e:
             logger.error(f"URL discovery error: {str(e)}")
             raise
@@ -40,9 +130,10 @@ class FastAPIClient:
     async def start_crawling(
         self,
         urls: List[str],
-        settings: Optional[Dict] = None
+        settings: Optional[Dict] = None,
+        on_update: Optional[Callable[[Dict], None]] = None
     ) -> Dict:
-        """Start crawling process"""
+        """Start crawling process with optional status updates"""
         try:
             response = await self.client.post(
                 f"{self.api_url}/crawl",
@@ -52,7 +143,13 @@ class FastAPIClient:
                 }
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            
+            # Start polling if callback provided
+            if on_update and result.get("task_id"):
+                await self.start_polling(result["task_id"], on_update)
+            
+            return result
         except Exception as e:
             logger.error(f"Crawling error: {str(e)}")
             raise
@@ -141,5 +238,6 @@ class FastAPIClient:
             raise
     
     async def close(self):
-        """Close the HTTP client"""
+        """Close the HTTP client and stop all polling"""
+        await self.stop_polling()
         await self.client.aclose()

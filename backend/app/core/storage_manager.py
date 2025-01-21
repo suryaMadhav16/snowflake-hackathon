@@ -3,7 +3,7 @@ import hashlib
 import tempfile
 from pathlib import Path
 from typing import Dict, Optional, Union, BinaryIO, List
-from ..database.snowflake_manager import SnowflakeManager
+from database.snowflake_manager import SnowflakeManager
 
 logger = logging.getLogger(__name__)
 

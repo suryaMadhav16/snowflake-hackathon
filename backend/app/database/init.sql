@@ -36,6 +36,21 @@ CREATE OR REPLACE FILE FORMAT binary_format
     BINARY_FORMAT = HEX;
 
 -- Create core tables
+CREATE OR REPLACE TABLE tasks (
+    task_id STRING PRIMARY KEY,
+    task_type STRING,  -- 'discovery' or 'crawl'
+    status STRING,     -- 'created', 'running', 'completed', 'failed'
+    progress FLOAT,
+    settings VARIANT,
+    metrics VARIANT,
+    error STRING,
+    current_url STRING,
+    urls ARRAY,
+    created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    completed_at TIMESTAMP_NTZ
+);
+
 CREATE OR REPLACE TABLE discovery_results (
     task_id STRING PRIMARY KEY,
     start_url STRING,
@@ -44,7 +59,8 @@ CREATE OR REPLACE TABLE discovery_results (
     max_depth INTEGER,
     url_graph VARIANT,
     created_at TIMESTAMP_NTZ,
-    completed_at TIMESTAMP_NTZ
+    completed_at TIMESTAMP_NTZ,
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id)
 );
 
 CREATE OR REPLACE TABLE crawl_results (
@@ -56,7 +72,9 @@ CREATE OR REPLACE TABLE crawl_results (
     media_data VARIANT,
     links_data VARIANT,
     metadata VARIANT,
-    created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    task_id STRING,
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id)
 );
 
 CREATE OR REPLACE TABLE saved_files (
@@ -74,7 +92,8 @@ CREATE OR REPLACE TABLE task_metrics (
     task_id STRING,
     timestamp TIMESTAMP_NTZ,
     metrics VARIANT,
-    PRIMARY KEY (task_id, timestamp)
+    PRIMARY KEY (task_id, timestamp),
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id)
 );
 
 -- Create python UDF for markdown processing
