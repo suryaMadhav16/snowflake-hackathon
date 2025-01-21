@@ -100,7 +100,7 @@ async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
                 if result.success:
                     files = await db.get_saved_files(result.url)
                     for file in files:
-                        saved_files[file['file_type']] = file['file_path']
+                        saved_files[file['FILE_TYPE']] = file['FILE_PATH']
                 
                 results.append(CrawlResult(
                     url=result.url,

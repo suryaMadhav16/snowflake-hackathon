@@ -1,67 +1,43 @@
 import streamlit as st
-from services.api_client import APIClient
-from components.url_input import render_url_input
-from components.url_selector import render_url_selector
-from components.results import render_results
+from snowflake.snowpark.context import get_active_session
 
-# Initialize API client
+# Initialize Snowflake connection
 @st.cache_resource
-def get_api_client():
-    return APIClient()
+def init_snowflake():
+    try:
+        return get_active_session()
+    except Exception as e:
+        st.error(f"Failed to connect to Snowflake: {str(e)}")
+        return None
 
 def main():
-    st.title("Web Crawler")
+    st.set_page_config(
+        page_title="Web Crawler & RAG Chat",
+        page_icon="🌐",
+        layout="wide"
+    )
     
-    # Initialize session state
+    # Initialize session states
     if 'discovered_urls' not in st.session_state:
         st.session_state.discovered_urls = None
+    if 'domain' not in st.session_state:
         st.session_state.domain = None
+    if 'crawl_results' not in st.session_state:
         st.session_state.crawl_results = None
+    if 'crawled_domains' not in st.session_state:
+        st.session_state.crawled_domains = set()
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
     
-    api_client = get_api_client()
+    st.title("🌐 Web Crawler & RAG Chat")
+    st.markdown("""
+    Welcome! Choose from the pages in the sidebar:
     
-    # URL Input Phase
-    url, mode, discover_clicked = render_url_input()
+    * **🕷️ Crawler**: Discover and crawl web pages
+    * **💬 Chat**: Chat with an AI assistant about the crawled content
     
-    if discover_clicked:
-        with st.spinner("Discovering URLs..."):
-            try:
-                response = api_client.discover_urls(url, mode)
-                st.session_state.discovered_urls = response['urls']
-                st.session_state.domain = response['domain']
-                st.success(f"Found {len(response['urls'])} URLs")
-            except Exception:
-                # Error already shown by API client
-                st.session_state.discovered_urls = None
-                st.session_state.domain = None
-    
-    # URL Selection Phase
-    if st.session_state.discovered_urls:
-        selected_urls, exclude_patterns = render_url_selector(
-            st.session_state.discovered_urls,
-            st.session_state.domain
-        )
-        
-        # Crawling Phase
-        if selected_urls:
-            if st.button("Start Crawling", type="primary"):
-                with st.spinner("Crawling selected URLs..."):
-                    try:
-                        response = api_client.crawl_urls(selected_urls, exclude_patterns)
-                        st.session_state.crawl_results = response['results']
-                    except Exception:
-                        # Error already shown by API client
-                        st.session_state.crawl_results = None
-        
-        # Results Phase
-        if st.session_state.crawl_results:
-            render_results(st.session_state.crawl_results)
-            
-            if st.button("Start Over"):
-                st.session_state.discovered_urls = None
-                st.session_state.domain = None
-                st.session_state.crawl_results = None
-                st.rerun()
+    Start by using the Crawler to gather content, then use Chat to interact with it!
+    """)
 
 if __name__ == "__main__":
     main()

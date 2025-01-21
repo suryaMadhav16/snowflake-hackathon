@@ -13,7 +13,8 @@ def render_results(results: List[Dict]):
         row = {
             'URL': result['url'],
             'Status': '✅ Success' if result['success'] else '❌ Failed',
-            'Files': len(result['files']) if result['success'] else 0
+            'Files': len(result['files']) if result['success'] else 0,
+            'RAG Status': '🔄 Processing'  # Will be updated when RAG processing is done
         }
         if not result['success']:
             row['Error'] = result.get('error_message', 'Unknown error')
@@ -22,7 +23,7 @@ def render_results(results: List[Dict]):
     df = pd.DataFrame(data)
     
     # Show summary metrics
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         total = len(results)
@@ -36,6 +37,9 @@ def render_results(results: List[Dict]):
     with col3:
         total_files = sum(len(r['files']) for r in results if r['success'])
         st.metric("Saved Files", total_files)
+        
+    with col4:
+        st.metric("RAG Status", "Processing")
     
     # Show results table
     st.write("#### Details")
@@ -54,6 +58,10 @@ def render_results(results: List[Dict]):
             "Files": st.column_config.NumberColumn(
                 "Saved Files",
                 help="Number of files saved"
+            ),
+            "RAG Status": st.column_config.TextColumn(
+                "RAG Status",
+                help="RAG processing status"
             )
         },
         hide_index=True
@@ -73,3 +81,10 @@ def render_results(results: List[Dict]):
         st.write("#### Errors")
         for error in errors:
             st.error(f"{error['url']}: {error.get('error_message', 'Unknown error')}")
+            
+    st.info("""
+    🔍 What's happening:
+    1. Content has been crawled successfully
+    2. Processing content for RAG (chunking & vectorization)
+    3. Once complete, you can use the Chat page to interact with the content
+    """)
