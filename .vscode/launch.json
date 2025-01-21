@@ -5,7 +5,7 @@
         "type": "debugpy",
         "request": "launch",
         "name": "Launch Backend",
-        "program": "${workspaceFolder}/backend/app/main.py",        
+        "program": "${workspaceFolder}/backend/main.py",        
         "console": "integratedTerminal",
         "envFile": "${workspaceFolder}/backend/.env",
         "cwd": "${workspaceFolder}/backend"

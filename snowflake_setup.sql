@@ -6,19 +6,58 @@ CREATE OR REPLACE SCHEMA RAG;
 
 USE LLM.RAG;
 
+-- Create stage for documentations
+CREATE OR REPLACE STAGE DOCUMENTATIONS;
 
+-- Create main documentations table
+CREATE OR REPLACE TABLE DOCUMENTATIONS (
+    FILE_NAME TEXT NOT NULL PRIMARY KEY,
+    CONTENTS TEXT,
+    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
 
-CREATE STAGE DOCUMENTATIONS;
+-- Create chunked table
+CREATE OR REPLACE TABLE DOCUMENTATIONS_CHUNKED (
+    FILE_NAME TEXT NOT NULL,
+    CHUNK_NUMBER NUMBER NOT NULL,
+    CHUNK_TEXT TEXT,
+    COMBINED_CHUNK_TEXT TEXT,
+    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    PRIMARY KEY (FILE_NAME, CHUNK_NUMBER)
+);
 
-LIST @LLM.RAG.DOCUMENTATIONS;
+-- Create vectors table
+CREATE OR REPLACE TABLE DOCUMENTATIONS_CHUNKED_VECTORS (
+    FILE_NAME TEXT NOT NULL,
+    CHUNK_NUMBER NUMBER NOT NULL,
+    CHUNK_TEXT TEXT,
+    COMBINED_CHUNK_TEXT TEXT,
+    COMBINED_CHUNK_VECTOR ARRAY,
+    CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    PRIMARY KEY (FILE_NAME, CHUNK_NUMBER)
+);
 
-CREATE OR REPLACE FUNCTION py_read_markdown(file string)
-    returns string 
-    language python
-    runtime_version = '3.8'
-    packages = ('snowflake-snowpark-python', 'markdown', 'mistune')
-    handler = 'read_file'
-as 
+-- Create CRAWL_METADATA table
+CREATE OR REPLACE TABLE CRAWL_METADATA (
+    URL TEXT NOT NULL PRIMARY KEY,
+    SUCCESS BOOLEAN,
+    ERROR_MESSAGE TEXT,
+    METADATA OBJECT,
+    TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FILE_NAME TEXT,
+    FILE_TYPE TEXT,
+    CONTENT_TYPE TEXT,
+    SIZE NUMBER
+);
+
+-- Create markdown processing function
+CREATE OR REPLACE FUNCTION PY_READ_MARKDOWN(file string)
+    RETURNS STRING 
+    LANGUAGE PYTHON
+    RUNTIME_VERSION = '3.8'
+    PACKAGES = ('snowflake-snowpark-python', 'markdown', 'mistune')
+    HANDLER = 'read_file'
+AS 
 $$
 import mistune
 from snowflake.snowpark.files import SnowflakeFile
@@ -27,13 +66,10 @@ from html.parser import HTMLParser
 def read_file(file_path):
     with SnowflakeFile.open(file_path, 'r') as file:
         markdown_content = file.read()
+        html_content = mistune.html(markdown_content)
         
-        # Use mistune without explicit renderer
-        html_content = mistune.html(markdown_content)  # Changed this line
-        
-        # Strip HTML tags
         class MLStripper(HTMLParser):
-            def __init__(self):  # Fixed the method name formatting
+            def __init__(self):
                 super().__init__()
                 self.reset()
                 self.strict = False
@@ -52,116 +88,193 @@ def read_file(file_path):
         
         return plain_text
 $$;
-SHOW USER FUNCTIONS;
 
-
-
-
-CREATE OR REPLACE TABLE documentations AS
-    WITH filenames AS (SELECT DISTINCT METADATA$FILENAME AS file_name FROM @documentations)
-    SELECT 
-        file_name, 
-        py_read_markdown(build_scoped_file_url(@documentations, file_name)) AS contents
-    FROM filenames;
-
---Validate
-SELECT * FROM documentations;
-
-
----------Chinking------------
-SET chunk_size = 3000;
-SET overlap = 1000;
-CREATE OR REPLACE TABLE documentations_chunked AS 
-WITH RECURSIVE split_contents AS (
-    SELECT 
-        file_name,
-        SUBSTRING(contents, 1, $chunk_size) AS chunk_text,
-        SUBSTRING(contents, $chunk_size-$overlap) AS remaining_contents,
-        1 AS chunk_number
-    FROM 
-        documentations
-
-    UNION ALL
-
-    SELECT 
-        file_name,
-        SUBSTRING(remaining_contents, 1, $chunk_size),
-        SUBSTRING(remaining_contents, $chunk_size+1),
-        chunk_number + 1
-    FROM 
-        split_contents
-    WHERE 
-        LENGTH(remaining_contents) > 0
-)
-SELECT 
-    file_name,
-    chunk_number,
-    chunk_text,
-    CONCAT(
-        'Sampled contents from documentations [', 
-        file_name,
-        ']: ', 
-        chunk_text
-    ) AS combined_chunk_text
-FROM 
-    split_contents
-ORDER BY 
-    file_name,
-    chunk_number;
-
---Validate
-SELECT * FROM documentations_chunked;
-
-SELECT SNOWFLAKE.CORTEX.EMBED_TEXT_768('snowflake-arctic-embed-m-v1.5', 'hello world');
--------------------Vectorize-------------
-
-CREATE OR REPLACE TABLE documentations_chunked_vectors AS 
-SELECT 
-    file_name, 
-    chunk_number, 
-    chunk_text, 
-    combined_chunk_text,
-    SNOWFLAKE.CORTEX.EMBED_TEXT_768('snowflake-arctic-embed-m-v1.5', combined_chunk_text) as combined_chunk_vector
-FROM 
-    documentations_chunked;
-
---Validate
-SELECT * FROM documentations_chunked_vectors;
-
-
-------------------LLM Prompting----------------
-
-set prompt = 'Give me code on how to use snowflake and propel?';
-
-CREATE OR REPLACE FUNCTION DOCUMENTATIONS_LLM(prompt string)
-RETURNS TABLE (response string, file_name string, chunk_text string, chunk_number int, score float)
+-- Create sync procedure with improved error handling
+CREATE OR REPLACE PROCEDURE SYNC_CRAWL_CONTENT()
+    RETURNS VARIANT
+    LANGUAGE SQL
 AS
-    $$
-    WITH best_match_chunk AS (
-        SELECT
-            v.file_name,
-            v.chunk_number,
-            v.chunk_text,
-            VECTOR_COSINE_SIMILARITY(v.combined_chunk_vector, snowflake.cortex.EMBED_TEXT_768('snowflake-arctic-embed-m-v1.5', prompt)) AS score
-        FROM 
-            documentations_chunked_vectors v
-        ORDER BY 
-            score DESC
-        LIMIT 10
+$
+DECLARE
+    result VARIANT;
+    rows_inserted INTEGER DEFAULT 0;
+BEGIN
+    -- Merge markdown content to DOCUMENTATIONS table
+    MERGE INTO DOCUMENTATIONS d
+    USING (
+        SELECT 
+            FILE_NAME,
+            METADATA:markdown_content::STRING as CONTENTS
+        FROM CRAWL_METADATA
+        WHERE FILE_TYPE = 'markdown'
+        AND METADATA:markdown_content IS NOT NULL
+    ) m
+    ON d.FILE_NAME = m.FILE_NAME
+    WHEN NOT MATCHED THEN
+        INSERT (FILE_NAME, CONTENTS)
+        VALUES (m.FILE_NAME, m.CONTENTS)
+    WHEN MATCHED THEN
+        UPDATE SET CONTENTS = m.CONTENTS;
+    
+    SET rows_inserted = SQLROWCOUNT;
+
+    -- Create chunks for new documents
+    INSERT INTO DOCUMENTATIONS_CHUNKED (
+        FILE_NAME,
+        CHUNK_NUMBER,
+        CHUNK_TEXT,
+        COMBINED_CHUNK_TEXT
     )
     SELECT 
-        SNOWFLAKE.cortex.COMPLETE('mixtral-8x7b', 
-            CONCAT('Answer this question: ', prompt, '\n\nUsing this documentations: ', chunk_text)
-        ) AS response,
-        file_name,
-        chunk_text,
-        chunk_number,
-        score
-    FROM
-        best_match_chunk
-    $$;
+        d.FILE_NAME,
+        ROW_NUMBER() OVER (PARTITION BY d.FILE_NAME ORDER BY pos) as CHUNK_NUMBER,
+        SUBSTR(d.CONTENTS, pos, 3000) as CHUNK_TEXT,
+        CONCAT('Content from document [', d.FILE_NAME, ']: ', SUBSTR(d.CONTENTS, pos, 3000)) as COMBINED_CHUNK_TEXT
+    FROM DOCUMENTATIONS d
+    CROSS JOIN TABLE(GENERATOR(ROWCOUNT => (LENGTH(d.CONTENTS) + 2999) / 3000)) g
+    LEFT JOIN DOCUMENTATIONS_CHUNKED dc
+        ON d.FILE_NAME = dc.FILE_NAME
+    WHERE dc.FILE_NAME IS NULL
+    AND pos <= LENGTH(d.CONTENTS);
 
-  -- Test the LLM:
-SELECT * FROM TABLE(DOCUMENTATIONS_LLM($prompt));
+    -- Generate embeddings for new chunks
+    INSERT INTO DOCUMENTATIONS_CHUNKED_VECTORS (
+        FILE_NAME,
+        CHUNK_NUMBER,
+        CHUNK_TEXT,
+        COMBINED_CHUNK_TEXT,
+        COMBINED_CHUNK_VECTOR
+    )
+    SELECT 
+        dc.FILE_NAME,
+        dc.CHUNK_NUMBER,
+        dc.CHUNK_TEXT,
+        dc.COMBINED_CHUNK_TEXT,
+        SNOWFLAKE.CORTEX.EMBED_TEXT_768(
+            'snowflake-arctic-embed-m-v1.5',
+            dc.COMBINED_CHUNK_TEXT
+        ) as COMBINED_CHUNK_VECTOR
+    FROM DOCUMENTATIONS_CHUNKED dc
+    LEFT JOIN DOCUMENTATIONS_CHUNKED_VECTORS dcv
+        ON dc.FILE_NAME = dcv.FILE_NAME
+        AND dc.CHUNK_NUMBER = dcv.CHUNK_NUMBER
+    WHERE dcv.FILE_NAME IS NULL;
+
+    -- Return success result
+    SELECT
+        OBJECT_CONSTRUCT(
+            'status', 'success',
+            'message', 'Content sync completed successfully',
+            'rows_processed', rows_inserted
+        ) INTO :result;
+
+    RETURN result;
+
+EXCEPTION
+    WHEN OTHER THEN
+        SELECT
+            OBJECT_CONSTRUCT(
+                'status', 'error',
+                'message', 'Content sync failed: ' || SQLERRM,
+                'error_code', SQLCODE,
+                'error_state', SQLSTATE
+            ) INTO :result;
+        RETURN result;
+END;
+$;
 
 
+-- Create chunking procedure
+CREATE OR REPLACE PROCEDURE CHUNK_DOCUMENTS(
+    chunk_size NUMBER DEFAULT 3000,
+    overlap_size NUMBER DEFAULT 1000
+)
+RETURNS OBJECT
+LANGUAGE SQL
+EXECUTE AS CALLER
+AS
+DECLARE
+    result OBJECT;
+BEGIN
+    -- Initialize result
+    LET result := OBJECT_CONSTRUCT(
+        'status', 'pending',
+        'chunks_created', 0,
+        'error', NULL
+    );
+    
+    -- Start transaction
+    BEGIN TRANSACTION;
+    
+    -- Clear existing chunks
+    TRUNCATE TABLE DOCUMENTATIONS_CHUNKED;
+    
+    -- Create new chunks
+    INSERT INTO DOCUMENTATIONS_CHUNKED (FILE_NAME, CHUNK_NUMBER, CHUNK_TEXT, COMBINED_CHUNK_TEXT)
+    WITH RECURSIVE chunks AS (
+        SELECT 
+            FILE_NAME,
+            CONTENTS,
+            1 as CHUNK_NUMBER,
+            SUBSTRING(CONTENTS, 1, chunk_size) as CHUNK_TEXT
+        FROM DOCUMENTATIONS
+        
+        UNION ALL
+        
+        SELECT 
+            FILE_NAME,
+            CONTENTS,
+            CHUNK_NUMBER + 1,
+            SUBSTRING(
+                CONTENTS, 
+                (CHUNK_NUMBER * chunk_size) - overlap_size, 
+                chunk_size
+            )
+        FROM chunks
+        WHERE LENGTH(SUBSTRING(
+            CONTENTS, 
+            (CHUNK_NUMBER * chunk_size) - overlap_size, 
+            chunk_size
+        )) > 0
+    )
+    SELECT 
+        FILE_NAME,
+        CHUNK_NUMBER,
+        CHUNK_TEXT,
+        CONCAT('Content from document [', FILE_NAME, ']: ', CHUNK_TEXT) as COMBINED_CHUNK_TEXT
+    FROM chunks
+    ORDER BY FILE_NAME, CHUNK_NUMBER;
+    
+    -- Get number of chunks created
+    LET chunks_created := SQLROWCOUNT;
+    
+    -- Commit transaction
+    COMMIT;
+    
+    -- Update result
+    LET result := OBJECT_CONSTRUCT(
+        'status', 'success',
+        'chunks_created', chunks_created,
+        'error', NULL
+    );
+    
+    RETURN result;
+
+EXCEPTION
+    WHEN OTHER THEN
+        -- Roll back on error
+        ROLLBACK;
+        
+        -- Update result with error info
+        LET result := OBJECT_CONSTRUCT(
+            'status', 'error',
+            'chunks_created', 0,
+            'error', OBJECT_CONSTRUCT(
+                'code', SQLCODE,
+                'state', SQLSTATE,
+                'message', SQLERRM
+            )
+        );
+        
+        RETURN result;
+END;

@@ -1,0 +1,12 @@
+# Snowflake Configuration
+# Copy this file to snowflake.conf and update with your credentials
+
+# Required settings
+account=your_account_locator
+user=your_username
+password=your_password
+
+# Optional settings (with defaults)
+warehouse=MEDIUM
+database=LLM
+schema=RAG

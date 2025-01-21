@@ -1,15 +1,13 @@
+# Existing requirements
 fastapi
 uvicorn
-snowflake-connector-python
-crawl4ai
-websockets
-aiohttp
-python-dotenv
-pydantic
 python-multipart
-email-validator
-requests
-httpx
-asyncio
-typing-extensions
-cryptography
+python-magic
+crawl4ai
+aiosqlite
+
+# Added Snowflake requirements
+snowflake-connector-python
+snowflake-sqlalchemy
+pandas
+python-magic
