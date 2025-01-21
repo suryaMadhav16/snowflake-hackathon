@@ -1,31 +1,14 @@
 import streamlit as st
 import datetime
+import asyncio
 
-def render_websocket_status():
-    """Render WebSocket connection status"""
+async def test_websocket_connection():
+    """Test WebSocket connectivity"""
     if "ws_client" not in st.session_state:
         st.error("WebSocket client not initialized")
-        return
-
-    st.sidebar.markdown("### 🔌 WebSocket Status")
-    
-    # Add refresh button
-    if st.sidebar.button("🔄 Refresh Status"):
-        st.rerun()
-    
-    ws_client = st.session_state.ws_client
-    
-    # Check metrics connection
-    metrics_status = ws_client.get_connection_status("metrics")
-    progress_status = ws_client.get_connection_status("progress")
-    
-    # Metrics Status
-    st.sidebar.markdown("#### Metrics Connection")
-    render_connection_details("metrics", metrics_status)
-    
-    # Progress Status
-    st.sidebar.markdown("#### Progress Connection")
-    render_connection_details("progress", progress_status)
+        return False
+        
+    return await st.session_state.ws_client.test_connection()
 
 def render_connection_details(conn_type: str, status: dict):
     """Render detailed connection status"""
@@ -62,5 +45,41 @@ def render_connection_details(conn_type: str, status: dict):
         # Error information
         if status.get("last_error"):
             st.error(f"Last Error: {status['last_error']}")
-            
+
+def render_websocket_status():
+    """Render WebSocket connection status"""
+    if "ws_client" not in st.session_state:
+        st.error("WebSocket client not initialized")
+        return
+
+    st.sidebar.markdown("### 🔌 WebSocket Status")
+    
+    # Add refresh and test buttons
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if st.button("🔄 Refresh"):
+            st.experimental_rerun()
+    with col2:
+        if st.button("🔌 Test"):
+            if asyncio.run(test_websocket_connection()):
+                st.success("Connection test passed!")
+            else:
+                st.error("Connection test failed!")
+    
+    # Show base WebSocket URL
+    ws_client = st.session_state.ws_client
+    st.sidebar.code(ws_client.api_url, language="text")
+    
+    # Check connections
+    metrics_status = ws_client.get_connection_status("metrics")
+    progress_status = ws_client.get_connection_status("progress")
+    
+    # Metrics Status
+    st.sidebar.markdown("#### Metrics Connection")
+    render_connection_details("metrics", metrics_status)
+    
+    # Progress Status
+    st.sidebar.markdown("#### Progress Connection")
+    render_connection_details("progress", progress_status)
+    
     st.sidebar.markdown("---")

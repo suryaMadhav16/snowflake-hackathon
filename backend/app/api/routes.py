@@ -187,6 +187,34 @@ async def get_file_content(
         raise HTTPException(status_code=500, detail=str(e))
 
 # WebSocket endpoints
+
+@router.websocket("/ws/debug")
+async def websocket_debug(websocket: WebSocket):
+    """Debug endpoint for testing WebSocket connectivity"""
+    try:
+        await websocket.accept()
+        await websocket.send_json({
+            "status": "connected",
+            "message": "WebSocket debug connection established",
+            "time": datetime.datetime.now().isoformat()
+        })
+        
+        try:
+            while True:
+                # Send heartbeat every 5 seconds
+                await asyncio.sleep(5)
+                await websocket.send_json({
+                    "type": "heartbeat",
+                    "time": datetime.datetime.now().isoformat()
+                })
+        except WebSocketDisconnect:
+            logger.info("Debug WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"Debug WebSocket error: {str(e)}")
+        if websocket.client_state.connected:
+            await websocket.close()
+
+
 @router.websocket("/ws/metrics/{task_id}")
 async def websocket_metrics(
     websocket: WebSocket,

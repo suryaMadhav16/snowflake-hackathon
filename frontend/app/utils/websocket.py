@@ -25,8 +25,13 @@ class WebSocketClient:
     
     @property
     def api_url(self) -> str:
-        """Get base API URL"""        
-        return f"{self.base_url}/api/{self.api_version}"
+        """Get base API URL with proper WebSocket protocol"""
+        base = self.base_url
+        if base.startswith('http://'):
+            base = base.replace('http://', 'ws://')
+        elif base.startswith('https://'):
+            base = base.replace('https://', 'wss://')
+        return f"{base}/api/{self.api_version}"
     
     def get_connection_status(self, connection_type: str) -> Dict:
         """Get connection status"""
@@ -193,6 +198,28 @@ class WebSocketClient:
             delay = delay + (asyncio.get_event_loop().time() % jitter)
             logger.debug(f"Retrying {connection_type} WebSocket connection in {delay:.2f} seconds")
             await asyncio.sleep(delay)
+    
+    async def test_connection(self) -> bool:
+        """Test WebSocket connectivity using debug endpoint"""
+        uri = f"{self.api_url}/ws/debug"
+        logger.debug(f"Testing WebSocket connection at {uri}")
+        
+        try:
+            async with websockets.connect(uri) as websocket:
+                # Wait for initial connection message
+                message = await websocket.recv()
+                data = json.loads(message)
+                
+                if data.get("status") == "connected":
+                    logger.info("WebSocket test connection successful")
+                    return True
+                else:
+                    logger.error(f"Unexpected connection response: {data}")
+                    return False
+                    
+        except Exception as e:
+            logger.error(f"WebSocket test connection failed: {str(e)}")
+            return False
     
     async def disconnect(self, connection_type: Optional[str] = None):
         """Disconnect WebSocket connection(s)"""

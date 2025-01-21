@@ -18,9 +18,8 @@ def init_session_state():
     if "api_client" not in st.session_state:
         st.session_state.api_client = FastAPIClient(st.secrets["api_url"])
     if "ws_client" not in st.session_state:
-        st.session_state.ws_client = WebSocketClient(st.secrets["ws_url"])
-        st.info("WebSocket client initialized")
-        st.info(st.secrets["ws_url"])
+        st.session_state.ws_client = WebSocketClient(st.secrets["ws_url"])        
+        
     if "snowflake" not in st.session_state:
         st.session_state.snowflake = SnowflakeManager()
 
