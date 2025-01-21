@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
 from snowflake.connector.pandas_tools import write_pandas
+import snowflake.connector 
 from snowflake.connector import SnowflakeConnection
 import pandas as pd
 from crawl4ai import CrawlResult
@@ -22,13 +23,17 @@ class SnowflakeManager:
             'account': os.getenv('SNOWFLAKE_ACCOUNT'),
             'user': os.getenv('SNOWFLAKE_USER'),
             'password': os.getenv('SNOWFLAKE_PASSWORD'),
-            'warehouse': 'MEDIUM',
+            'warehouse': 'COMPUTE_WH',
             'database': 'LLM',
+            'sfschema': 'RAG',
+            'role': 'ACCOUNTADMIN',
             'schema': 'RAG'
         }
+        self.config['sfschema'] = 'RAG'
         self.config['schema'] = 'RAG'
         self.config['database'] = 'LLM'
-        self.config['warehouse'] = 'MEDIUM'
+        self.config['warehouse'] = 'COMPUTE_WH'
+        self.config['role'] = 'ACCOUNTADMIN'
         logger.info(self.config)
         self._lock = asyncio.Lock()
         self._conn = None
@@ -36,10 +41,11 @@ class SnowflakeManager:
     async def _get_connection(self) -> SnowflakeConnection:
         """Get or create Snowflake connection"""
         if not self._conn:
-            ss = SnowflakeConnection()
+            
             logger.info("================Connecting to Snowflake...===========")
             logger.info(self.config)
-            self._conn = await ss.connect(**self.config)
+            
+            self._conn = snowflake.connector.connect(**self.config)
         return self._conn
         
     async def initialize(self):
@@ -47,9 +53,9 @@ class SnowflakeManager:
         try:
             conn = await self._get_connection()
             # Use existing stage and tables
-            await conn.cursor().execute("USE WAREHOUSE MEDIUM")
-            await conn.cursor().execute("USE DATABASE LLM")
-            await conn.cursor().execute("USE SCHEMA RAG")
+            conn.cursor().execute("USE WAREHOUSE MEDIUM")
+            conn.cursor().execute("USE DATABASE LLM")
+            conn.cursor().execute("USE SCHEMA RAG")
             logger.info("Snowflake connection initialized successfully")
         except Exception as e:
             logger.error(f"Snowflake initialization failed: {str(e)}")

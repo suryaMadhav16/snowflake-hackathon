@@ -12,7 +12,8 @@ def load_snowflake_config() -> Dict[str, str]:
         'password': os.getenv('SNOWFLAKE_PASSWORD'),
         'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'MEDIUM'),
         'database': os.getenv('SNOWFLAKE_DATABASE', 'LLM'),
-        'schema': os.getenv('SNOWFLAKE_SCHEMA', 'RAG')
+        'sfschema': os.getenv('SNOWFLAKE_SCHEMA', 'RAG'),
+        'schema': os.getenv('SNOWFLAKE_SCHEMA', 'RAG'),
     }
     
     # Check if all required values are present
