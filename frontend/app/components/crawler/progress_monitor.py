@@ -9,10 +9,18 @@ class ProgressMonitor:
     def __init__(self, task_id: str):
         """Initialize progress monitor"""
         self.task_id = task_id
-        self.progress_bar = st.empty()
-        self.status_text = st.empty()
-        self.metrics_container = st.empty()
-        self.content_metrics = st.empty()
+        
+        # Create containers
+        self.connection_status = st.empty()
+        self.progress_container = st.container()
+        self.results_container = st.container()
+        
+        with self.progress_container:
+            self.progress_bar = st.empty()
+            self.status_text = st.empty()
+            self.metrics_container = st.empty()
+            self.content_metrics = st.empty()
+        
         self.last_update = time.time()
         
         # Initialize session state for this task
@@ -35,6 +43,30 @@ class ProgressMonitor:
                 }
             }
     
+    def show_connection_status(self):
+        """Show WebSocket connection status"""
+        try:
+            ws_client = st.session_state.ws_client
+            progress_status = ws_client.get_connection_status("progress")
+            metrics_status = ws_client.get_connection_status("metrics")
+            
+            with self.connection_status:
+                st.sidebar.subheader("🔌 Connection Status")
+                
+                # Progress WebSocket
+                progress_color = "🟢" if progress_status["connected"] else "🔴"
+                st.sidebar.write(f"{progress_color} Progress WebSocket")
+                if not progress_status["connected"] and progress_status["last_error"]:
+                    st.sidebar.error(progress_status["last_error"])
+                
+                # Metrics WebSocket
+                metrics_color = "🟢" if metrics_status["connected"] else "🔴"
+                st.sidebar.write(f"{metrics_color} Metrics WebSocket")
+                if not metrics_status["connected"] and metrics_status["last_error"]:
+                    st.sidebar.error(metrics_status["last_error"])
+        except Exception as e:
+            st.sidebar.error(f"Error showing connection status: {str(e)}")
+    
     def update_progress(self, data: Dict):
         """Update progress bar and status"""
         progress = data.get("progress", 0)
@@ -46,7 +78,17 @@ class ProgressMonitor:
         
         # Update UI
         self.progress_bar.progress(progress)
-        self.status_text.text(f"Status: {status}")
+        self.status_text.write(f"📊 **Status:** {status}")
+        
+        # Show connection status
+        self.show_connection_status()
+        
+        # Show phase message
+        if progress < 1.0:
+            if status == "Starting...":
+                st.info("🔍 Discovering URLs... Please wait...")
+            elif "crawling" in status.lower():
+                st.info("🌐 Crawling discovered URLs...")
     
     def update_metrics(self, data: Dict):
         """Update metrics display"""
@@ -61,14 +103,14 @@ class ProgressMonitor:
             
             with col1:
                 st.metric(
-                    "Successful",
+                    "✅ Successful",
                     metrics.get("successful", 0),
                     delta=metrics.get("successful", 0) - self._get_last_metric("successful")
                 )
             
             with col2:
                 st.metric(
-                    "Failed",
+                    "❌ Failed",
                     metrics.get("failed", 0),
                     delta=metrics.get("failed", 0) - self._get_last_metric("failed"),
                     delta_color="inverse"
@@ -76,14 +118,14 @@ class ProgressMonitor:
             
             with col3:
                 st.metric(
-                    "URLs/sec",
+                    "⚡ URLs/sec",
                     f"{metrics.get('urls_per_second', 0):.1f}",
                     delta=None
                 )
             
             with col4:
                 st.metric(
-                    "Memory (MB)",
+                    "💾 Memory (MB)",
                     f"{metrics.get('memory_usage', 0) / 1024 / 1024:.1f}",
                     delta=None
                 )
@@ -91,30 +133,30 @@ class ProgressMonitor:
         # Update content metrics
         saved_content = metrics.get("saved_content", {})
         with self.content_metrics:
-            st.subheader("Saved Content")
+            st.subheader("📦 Saved Content")
             col5, col6, col7, col8 = st.columns(4)
             
             with col5:
                 st.metric(
-                    "Markdown",
+                    "📝 Markdown",
                     saved_content.get("markdown", 0)
                 )
             
             with col6:
                 st.metric(
-                    "Images",
+                    "🖼️ Images",
                     saved_content.get("images", 0)
                 )
             
             with col7:
                 st.metric(
-                    "PDFs",
+                    "📄 PDFs",
                     saved_content.get("pdf", 0)
                 )
             
             with col8:
                 st.metric(
-                    "Screenshots",
+                    "📸 Screenshots",
                     saved_content.get("screenshot", 0)
                 )
     
@@ -149,3 +191,11 @@ class ProgressMonitor:
         """Clean up session state"""
         if f"task_{self.task_id}_progress" in st.session_state:
             del st.session_state[f"task_{self.task_id}_progress"]
+        
+        # Clear UI containers
+        self.connection_status.empty()
+        with self.progress_container:
+            self.progress_bar.empty()
+            self.status_text.empty()
+            self.metrics_container.empty()
+            self.content_metrics.empty()

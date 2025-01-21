@@ -17,12 +17,27 @@ class WebSocketClient:
             self.base_url = f"ws{'s' if 'https' in self.base_url else ''}://{self.base_url.split('://', 1)[1]}"
         self.api_version = "v1"
         self.connections = {}
+        self.connection_status = {}
         self.active = True
     
     @property
     def api_url(self) -> str:
         """Get base API URL"""
         return f"{self.base_url}/api/{self.api_version}"
+    
+    def get_connection_status(self, connection_type: str) -> Dict:
+        """Get connection status"""
+        return self.connection_status.get(connection_type, {
+            "connected": False,
+            "last_error": None,
+            "last_message_time": None
+        })
+    
+    def _update_status(self, connection_type: str, status: Dict):
+        """Update connection status"""
+        current = self.get_connection_status(connection_type)
+        current.update(status)
+        self.connection_status[connection_type] = current
     
     async def connect_metrics(
         self,
@@ -53,19 +68,38 @@ class WebSocketClient:
             try:
                 async with websockets.connect(uri) as websocket:
                     self.connections[connection_type] = websocket
+                    self._update_status(connection_type, {
+                        "connected": True,
+                        "last_error": None
+                    })
+                    
                     try:
                         async for message in websocket:
                             if not self.active:
                                 break
                             try:
                                 data = json.loads(message)
+                                self._update_status(connection_type, {
+                                    "last_message_time": asyncio.get_event_loop().time()
+                                })
                                 callback(data)
                             except json.JSONDecodeError as e:
                                 logger.error(f"WebSocket message parse error: {str(e)}")
+                                self._update_status(connection_type, {
+                                    "last_error": f"Message parse error: {str(e)}"
+                                })
                     except ConnectionClosed:
                         logger.info(f"{connection_type} WebSocket connection closed")
+                        self._update_status(connection_type, {
+                            "connected": False,
+                            "last_error": "Connection closed"
+                        })
                     except Exception as e:
                         logger.error(f"WebSocket error: {str(e)}")
+                        self._update_status(connection_type, {
+                            "connected": False,
+                            "last_error": str(e)
+                        })
                     finally:
                         self.connections.pop(connection_type, None)
                         
@@ -77,6 +111,10 @@ class WebSocketClient:
                 
             except Exception as e:
                 logger.error(f"WebSocket connection error: {str(e)}")
+                self._update_status(connection_type, {
+                    "connected": False,
+                    "last_error": str(e)
+                })
                 if not self.active:
                     break
                 await asyncio.sleep(5)  # Wait longer before retrying
@@ -89,7 +127,15 @@ class WebSocketClient:
             if websocket:
                 await websocket.close()
                 self.connections.pop(connection_type, None)
+                self._update_status(connection_type, {
+                    "connected": False,
+                    "last_error": "Disconnected by client"
+                })
         else:
-            for websocket in self.connections.values():
+            for type_, websocket in self.connections.items():
                 await websocket.close()
+                self._update_status(type_, {
+                    "connected": False,
+                    "last_error": "Disconnected by client"
+                })
             self.connections.clear()

@@ -161,6 +161,8 @@ class SnowflakeManager:
     async def get_discovery_result(self, task_id: str) -> Optional[Dict]:
         """Get discovery result by task ID"""
         try:
+            database = self.config['database']
+            schema = self.config['sfschema']
             query = """
                 SELECT 
                     task_id,
@@ -171,7 +173,7 @@ class SnowflakeManager:
                     url_graph,
                     created_at,
                     completed_at
-                FROM discovery_results
+                FROM LLM.RAG.discovery_results
                 WHERE task_id = %(task_id)s
             """
             results = await self.execute_query(query, {'task_id': task_id})
@@ -187,7 +189,7 @@ class SnowflakeManager:
         """Save crawl result to Snowflake"""
         try:
             query = """
-                MERGE INTO crawl_results t 
+                MERGE INTO RAG.LLM.crawl_results t 
                 USING (SELECT %(url)s as url) s
                 ON t.url = s.url
                 WHEN MATCHED THEN 
@@ -235,7 +237,7 @@ class SnowflakeManager:
                     url, success, html, cleaned_html,
                     error_message, media_data, links_data, metadata,
                     created_at
-                FROM crawl_results 
+                FROM LLM.RAG.crawl_results 
                 WHERE url = %(url)s
             """
             results = await self.execute_query(query, {'url': url})
@@ -251,7 +253,7 @@ class SnowflakeManager:
         """Save file information to Snowflake"""
         try:
             query = """
-                MERGE INTO saved_files t 
+                MERGE INTO RAG.LLM.saved_files t 
                 USING (
                     SELECT 
                         %(url)s as url,
@@ -299,7 +301,7 @@ class SnowflakeManager:
                     url, file_type, stage_path,
                     content_type, size, metadata,
                     created_at
-                FROM saved_files
+                FROM RAG.LLM.saved_files
                 WHERE url = %(url)s
             """
             params = {'url': url}
@@ -318,7 +320,7 @@ class SnowflakeManager:
         """Save task metrics snapshot"""
         try:
             query = """
-                INSERT INTO task_metrics (
+                INSERT INTO LLM.RAG.task_metrics (
                     task_id, timestamp, metrics
                 ) VALUES (
                     %(task_id)s, CURRENT_TIMESTAMP(), PARSE_JSON(%(metrics)s)
@@ -345,7 +347,7 @@ class SnowflakeManager:
                     COUNT(*) as total_urls,
                     COUNT_IF(success) as successful_urls,
                     COUNT_IF(NOT success) as failed_urls
-                FROM crawl_results
+                FROM LLM.RAG.crawl_results
             """
             
             # Get discovery stats
@@ -354,7 +356,7 @@ class SnowflakeManager:
                     COUNT(*) as total_tasks,
                     SUM(total_urls) as total_discovered_urls,
                     AVG(max_depth) as avg_depth
-                FROM discovery_results
+                FROM LLM.RAG.discovery_results
             """
             
             # Get file stats
@@ -363,7 +365,7 @@ class SnowflakeManager:
                     file_type,
                     COUNT(*) as count,
                     SUM(size) as total_size
-                FROM saved_files
+                FROM LLM.RAG.saved_files
                 GROUP BY file_type
             """
             
