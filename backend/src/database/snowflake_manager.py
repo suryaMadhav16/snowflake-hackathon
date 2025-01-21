@@ -2,60 +2,176 @@ import os
 import json
 import logging
 import asyncio
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 from pathlib import Path
+import snowflake.connector
+from snowflake.connector.errors import ProgrammingError, DatabaseError
 from snowflake.connector.pandas_tools import write_pandas
-import snowflake.connector 
-from snowflake.connector import SnowflakeConnection
 import pandas as pd
+from functools import partial
+
 from crawl4ai import CrawlResult
 
+# Setup detailed logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def normalize_response(data: Dict) -> Dict:
+    """Convert response keys to uppercase"""
+    if not data:
+        return {}
+    return {k.upper(): v for k, v in data.items()}
 
 class SnowflakeManager:
     """Manages Snowflake database operations for crawler results"""
     
     def __init__(self, config: dict = None):
         """Initialize Snowflake connection"""
-        logger.info("==================Initializing Snowflake connection================")
+        logger.info("Initializing Snowflake connection...")
         self.config = config or {
-            'account': os.getenv('SNOWFLAKE_ACCOUNT'),
             'user': os.getenv('SNOWFLAKE_USER'),
             'password': os.getenv('SNOWFLAKE_PASSWORD'),
-            'warehouse': 'COMPUTE_WH',
+            'account': os.getenv('SNOWFLAKE_ACCOUNT'),
+            'warehouse': 'MEDIUM',
             'database': 'LLM',
-            'sfschema': 'RAG',
-            'role': 'ACCOUNTADMIN',
-            'schema': 'RAG'
+            'schema': 'RAG',
+            'role': os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
         }
-        self.config['sfschema'] = 'RAG'
-        self.config['schema'] = 'RAG'
-        self.config['database'] = 'LLM'
-        self.config['warehouse'] = 'COMPUTE_WH'
-        self.config['role'] = 'ACCOUNTADMIN'
-        logger.info(self.config)
-        self._lock = asyncio.Lock()
+        logger.info(f"Using configuration: {self.config.copy().update({'password': '*****'})}")
         self._conn = None
+        self._lock = asyncio.Lock()
         
-    async def _get_connection(self) -> SnowflakeConnection:
+        # Store fully qualified names
+        self.database = 'LLM'
+        self.schema = 'RAG'
+    
+    async def _get_connection(self):
         """Get or create Snowflake connection"""
-        if not self._conn:
-            
-            logger.info("================Connecting to Snowflake...===========")
-            logger.info(self.config)
-            
-            self._conn = snowflake.connector.connect(**self.config)
+        async with self._lock:
+            if not self._conn:
+                try:
+                    logger.info("Creating new Snowflake connection...")
+                    loop = asyncio.get_event_loop()
+                    self._conn = await loop.run_in_executor(
+                        None,
+                        lambda: snowflake.connector.connect(**self.config)
+                    )
+                    logger.info("Successfully created Snowflake connection")
+                except Exception as e:
+                    logger.error(f"Failed to connect to Snowflake: {str(e)}")
+                    raise
         return self._conn
-        
+    
+    async def _execute_query(
+        self,
+        query: str,
+        params: Dict = None,
+        fetch: bool = True
+    ) -> Union[List[Dict], None]:
+        """Execute SQL query asynchronously"""
+        conn = await self._get_connection()
+        cur = None
+        try:
+            loop = asyncio.get_event_loop()
+            cur = conn.cursor()
+            
+            # Log the query with parameters
+            formatted_query = query
+            if params:
+                # Safely format query for logging
+                for k, v in params.items():
+                    formatted_query = formatted_query.replace(f'%({k})s', repr(v))
+            logger.info(f"Executing query: {formatted_query}")
+            
+            await loop.run_in_executor(
+                None,
+                lambda: cur.execute(query, params or {})
+            )
+            
+            if fetch and cur.description:
+                rows = await loop.run_in_executor(None, cur.fetchall)
+                columns = [col[0].upper() for col in cur.description]
+                results = [normalize_response(dict(zip(columns, row))) for row in rows]
+                logger.debug(f"Query returned {len(results)} rows")
+                return results
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Query execution error for query '{formatted_query}': {str(e)}")
+            raise
+        finally:
+            if cur:
+                await loop.run_in_executor(None, cur.close)
+
+    async def list_tables(self):
+        """List all tables and their columns in the current schema"""
+        try:
+            query = f"""
+                SELECT 
+                    table_name,
+                    column_name,
+                    data_type,
+                    is_nullable
+                FROM {self.database}.INFORMATION_SCHEMA.COLUMNS
+                WHERE table_schema = '{self.schema}'
+                ORDER BY table_name, ordinal_position
+            """
+            
+            logger.info(f"Fetching schema information for {self.database}.{self.schema}")
+            results = await self._execute_query(query)
+            
+            if not results:
+                logger.warning(f"No tables found in {self.database}.{self.schema}")
+                return
+            
+            # Group by table
+            tables = {}
+            for row in results:
+                table = row['TABLE_NAME']
+                if table not in tables:
+                    tables[table] = []
+                tables[table].append({
+                    'column': row['COLUMN_NAME'],
+                    'type': row['DATA_TYPE'],
+                    'nullable': row['IS_NULLABLE']
+                })
+            
+            # Log table information
+            logger.info(f"Found {len(tables)} tables in {self.database}.{self.schema}:")
+            for table, columns in tables.items():
+                logger.info(f"\nTable: {table}")
+                for col in columns:
+                    logger.info(f"  - {col['column']} ({col['type']}) {'NULL' if col['nullable'] == 'YES' else 'NOT NULL'}")
+            
+        except Exception as e:
+            logger.error(f"Error listing tables: {str(e)}")
+
     async def initialize(self):
         """Initialize database connection and setup"""
         try:
             conn = await self._get_connection()
-            # Use existing stage and tables
-            conn.cursor().execute("USE WAREHOUSE MEDIUM")
-            conn.cursor().execute("USE DATABASE LLM")
-            conn.cursor().execute("USE SCHEMA RAG")
+            loop = asyncio.get_event_loop()
+            
+            async def exec_command(cmd, description):
+                cur = conn.cursor()
+                try:
+                    logger.info(f"Executing: {description}")
+                    logger.debug(f"SQL: {cmd}")
+                    await loop.run_in_executor(None, lambda: cur.execute(cmd))
+                    logger.info(f"Successfully executed: {description}")
+                finally:
+                    cur.close()
+            
+            # Execute setup commands
+            await exec_command("USE WAREHOUSE MEDIUM", "Set warehouse")
+            await exec_command(f"USE DATABASE {self.database}", "Set database")
+            await exec_command(f"USE SCHEMA {self.schema}", "Set schema")
+            
+            # List tables and their structure
+            await self.list_tables()
+            
             logger.info("Snowflake connection initialized successfully")
         except Exception as e:
             logger.error(f"Snowflake initialization failed: {str(e)}")
@@ -63,35 +179,82 @@ class SnowflakeManager:
 
     async def upload_to_stage(self, file_path: Path, stage_path: str) -> bool:
         """Upload file to Snowflake stage"""
+        cur = None
         try:
+            stage_path = stage_path.replace('\\', '/')
+            file_path = str(file_path).replace('\\', '/')
+            
             conn = await self._get_connection()
-            put_command = f"PUT 'file://{file_path}' @DOCUMENTATIONS/{stage_path} AUTO_COMPRESS=FALSE"
-            async with conn.cursor() as cursor:
-                await cursor.execute(put_command)
-            return True
+            loop = asyncio.get_event_loop()
+            
+            put_command = f"PUT 'file://{file_path}' @{self.database}.{self.schema}.DOCUMENTATIONS/{stage_path} AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
+            logger.info(f"Uploading file to stage: {file_path}")
+            logger.debug(f"PUT command: {put_command}")
+            
+            cur = conn.cursor()
+            await loop.run_in_executor(None, lambda: cur.execute(put_command))
+            result = await loop.run_in_executor(None, cur.fetchall)
+            
+            status = result[0][6] if result and len(result[0]) > 6 else ''
+            success = 'UPLOADED' in status.upper()
+            
+            if success:
+                logger.info(f"Successfully uploaded {file_path} to @DOCUMENTATIONS/{stage_path}")
+            else:
+                logger.error(f"Failed to upload {file_path}: {status}")
+            
+            return success
+            
         except Exception as e:
             logger.error(f"Failed to upload to stage: {str(e)}")
             return False
+        finally:
+            if cur:
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, cur.close)
 
     async def save_file_metadata(self, url: str, file_info: Dict) -> bool:
-        """Save file metadata to crawl_metadata table"""
+        """Save file metadata to CRAWL_METADATA table"""
         try:
-            conn = await self._get_connection()
-            async with conn.cursor() as cursor:
-                await cursor.execute("""
-                    INSERT INTO crawl_metadata (
-                        url, file_name, file_type, content_type, size, metadata
-                    ) VALUES (
-                        %s, %s, %s, %s, %s, %s
+            metadata = normalize_response(file_info.get('METADATA', {}))
+            file_info = normalize_response(file_info)
+            
+            metadata.update({
+                'STAGE_PATH': file_info.get('STAGE_PATH'),
+                'FILE_TYPE_META': file_info.get('FILE_TYPE')
+            })
+            
+            query = f"""
+                MERGE INTO {self.database}.{self.schema}.CRAWL_METADATA t
+                USING (SELECT %(URL)s as URL) s
+                ON t.URL = s.URL
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        FILE_NAME = %(FILE_NAME)s,
+                        FILE_TYPE = %(FILE_TYPE)s,
+                        CONTENT_TYPE = %(CONTENT_TYPE)s,
+                        SIZE = %(SIZE)s,
+                        METADATA = PARSE_JSON(%(METADATA)s),
+                        TIMESTAMP = CURRENT_TIMESTAMP()
+                WHEN NOT MATCHED THEN
+                    INSERT (URL, FILE_NAME, FILE_TYPE, CONTENT_TYPE, SIZE, METADATA)
+                    VALUES (
+                        %(URL)s, %(FILE_NAME)s, %(FILE_TYPE)s, %(CONTENT_TYPE)s,
+                        %(SIZE)s, PARSE_JSON(%(METADATA)s)
                     )
-                """, (
-                    url,
-                    file_info['file_name'],
-                    file_info['file_type'],
-                    file_info['content_type'],
-                    file_info['size'],
-                    json.dumps(file_info.get('metadata', {}))
-                ))
+            """
+            
+            params = {
+                'URL': file_info['URL'],
+                'FILE_NAME': file_info['FILE_NAME'],
+                'FILE_TYPE': file_info['FILE_TYPE'],
+                'CONTENT_TYPE': file_info['CONTENT_TYPE'],
+                'SIZE': file_info['SIZE'],
+                'METADATA': json.dumps(metadata)
+            }
+            
+            await self._execute_query(query, params, fetch=False)
+            logger.info(f"Successfully saved metadata for {url}")
             return True
         except Exception as e:
             logger.error(f"Failed to save file metadata: {str(e)}")
@@ -100,75 +263,122 @@ class SnowflakeManager:
     async def save_results(self, results: List[CrawlResult]):
         """Save crawl results to Snowflake"""
         try:
-            # Convert results to pandas DataFrame for efficient upload
+            logger.info(f"Saving {len(results)} crawl results")
             results_data = []
             for result in results:
                 if not isinstance(result, CrawlResult):
                     continue
-                    
-                results_data.append({
-                    'url': result.url,
-                    'success': result.success,
-                    'error_message': result.error_message,
-                    'metadata': json.dumps({
-                        'media': result.media or {},
-                        'links': result.links or {},
-                        'metadata': getattr(result, 'metadata', {}) or {}
-                    }),
-                    'timestamp': datetime.now()
-                })
                 
+                metadata = {
+                    'MEDIA': result.media or {},
+                    'LINKS': result.links or {},
+                    'METADATA': getattr(result, 'metadata', {}) or {}
+                }
+                
+                results_data.append({
+                    'URL': result.url,
+                    'SUCCESS': result.success,
+                    'ERROR_MESSAGE': result.error_message,
+                    'METADATA': json.dumps(metadata),
+                    'TIMESTAMP': datetime.now()
+                })
+            
             if results_data:
                 df = pd.DataFrame(results_data)
                 conn = await self._get_connection()
-                # Use write_pandas for efficient batch upload
-                write_pandas(conn, df, 'crawl_metadata')
                 
-                # Trigger sync procedure to update documentations table
-                async with conn.cursor() as cursor:
-                    await cursor.execute("CALL sync_crawl_content()")
+                table_name = 'CRAWL_METADATA'  # Just the table name
+                schema_name = f'{self.database}.{self.schema}'  # Schema separately
+
+                # And modify write_pandas call:
+                write_pandas(conn, df, table_name)
+                logger.info(f"Writing {len(df)} rows to {table_name}")
+                
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(
+                    None,
+                    lambda: write_pandas(conn, df, table_name)
+                )
+                
+                logger.info("Calling sync procedure")
+                await self._execute_query(
+                    f"CALL {self.database}.{self.schema}.SYNC_CRAWL_CONTENT()",
+                    fetch=False
+                )
+                logger.info("Successfully saved results and synced content")
                 
         except Exception as e:
             logger.error(f"Error saving results: {str(e)}")
 
     async def get_stats(self) -> Dict:
-        """Get crawl statistics from Snowflake"""
+        """Get crawler statistics from Snowflake"""
         try:
-            conn = await self._get_connection()
-            stats = {}
+            logger.info("Fetching crawler statistics")
+            crawl_query = f"""
+                SELECT 
+                    COUNT(*) as TOTAL_URLS,
+                    COUNT_IF(SUCCESS) as SUCCESSFUL_URLS,
+                    COUNT_IF(NOT SUCCESS) as FAILED_URLS
+                FROM {self.database}.{self.schema}.CRAWL_METADATA
+            """
             
-            async with conn.cursor() as cursor:
-                # Get crawl stats
-                await cursor.execute("""
-                    SELECT 
-                        COUNT(*) as total,
-                        SUM(CASE WHEN success THEN 1 ELSE 0 END) as successful,
-                        SUM(CASE WHEN NOT success THEN 1 ELSE 0 END) as failed
-                    FROM crawl_metadata
-                """)
-                row = await cursor.fetchone()
-                stats['crawl_stats'] = {
-                    'total_urls': row[0] or 0,
-                    'successful': row[1] or 0,
-                    'failed': row[2] or 0
-                }
-                
-                # Get file stats
-                await cursor.execute("""
-                    SELECT file_type, COUNT(*) as count, SUM(size) as total_size
-                    FROM crawl_metadata
-                    WHERE file_type IS NOT NULL
-                    GROUP BY file_type
-                """)
-                file_stats = {}
-                async for row in cursor:
-                    file_stats[row[0]] = {
-                        'count': row[1],
-                        'total_size': row[2]
+            file_query = f"""
+                SELECT 
+                    FILE_TYPE,
+                    COUNT(*) as COUNT,
+                    SUM(SIZE) as TOTAL_SIZE
+                FROM {self.database}.{self.schema}.CRAWL_METADATA
+                WHERE FILE_TYPE IS NOT NULL
+                GROUP BY FILE_TYPE
+            """
+            
+            crawl_results = await self._execute_query(crawl_query)
+            file_results = await self._execute_query(file_query)
+            
+            crawl_stats = normalize_response(crawl_results[0]) if crawl_results else {
+                'TOTAL_URLS': 0,
+                'SUCCESSFUL_URLS': 0,
+                'FAILED_URLS': 0
+            }
+            
+            file_stats = {}
+            if file_results:
+                for row in file_results:
+                    row = normalize_response(row)
+                    file_stats[row['FILE_TYPE']] = {
+                        'COUNT': row['COUNT'],
+                        'TOTAL_SIZE': row['TOTAL_SIZE']
                     }
-                stats['file_stats'] = file_stats
-                
+            
+            stats = {
+                'CRAWL_STATS': crawl_stats,
+                'FILE_STATS': file_stats,
+                'LAST_UPDATE': datetime.now().isoformat()
+            }
+            logger.info(f"Statistics: {stats}")
             return stats
+            
         except Exception as e:
-            logger.error(f"Error getting statistics: {str(e)}")
+            logger.error(f"Error getting stats: {str(e)}")
             return {}
+            
+    async def close(self):
+        """Close Snowflake connection"""
+        if self._conn:
+            try:
+                logger.info("Closing Snowflake connection")
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, self._conn.close)
+                self._conn = None
+                logger.info("Snowflake connection closed successfully")
+            except Exception as e:
+                logger.error(f"Error closing Snowflake connection: {str(e)}")
+                
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        await self.close()
+        
+    def __del__(self):
+        """Destructor to ensure connection cleanup"""
+        if self._conn:
+            self._conn.close()
