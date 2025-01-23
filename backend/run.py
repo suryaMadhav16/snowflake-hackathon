@@ -1,3 +1,19 @@
+"""Entry point for the FastAPI backend server.
+
+This module is responsible for starting the FastAPI application using Uvicorn.
+It sets up the necessary environment for the application to run, including:
+1. Adding the backend directory to the Python path for module imports.
+2. Configuring the Uvicorn server to run the FastAPI app defined in main.py.
+
+To run the server, execute this script directly.
+
+Example:
+    To start the server:
+        $ python run.py
+
+This will start the server on http://0.0.0.0:8000 with auto-reload enabled.
+"""
+
 import os
 import sys
 import uvicorn

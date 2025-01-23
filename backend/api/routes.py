@@ -32,7 +32,7 @@ snowflake_config = load_snowflake_config()
 if error := validate_config(snowflake_config):
     raise Exception(f"Invalid Snowflake configuration: {error}")
 
-# Default configurations
+# Browser configuration for headless web crawling
 DEFAULT_BROWSER_CONFIG = BrowserConfig(
     headless=True,
     browser_type="chromium",
@@ -41,22 +41,48 @@ DEFAULT_BROWSER_CONFIG = BrowserConfig(
     viewport_height=800
 )
 
+# Default crawler behavior configuration
 DEFAULT_CRAWLER_CONFIG = CrawlerRunConfig(
-    magic=True,
-    simulate_user=True,
-    cache_mode=CacheMode.ENABLED,
-    mean_delay=1.0,
-    max_range=0.3,
-    semaphore_count=5,
-    screenshot=False,
-    pdf=False,
-    exclude_external_images=False,
-    wait_for_images=True
+    magic=True,              # Enable intelligent content extraction
+    simulate_user=True,      # Simulate real user behavior
+    cache_mode=CacheMode.ENABLED,  # Enable response caching
+    mean_delay=1.0,         # Average delay between requests
+    max_range=0.3,          # Maximum random delay variation
+    semaphore_count=5,      # Maximum concurrent requests
+    screenshot=False,        # Disable screenshot capture
+    pdf=False,              # Disable PDF generation
+    exclude_external_images=False,  # Include external images
+    wait_for_images=True    # Wait for image loading
 )
 
 @router.post("/discover", response_model=DiscoverURLResponse)
 async def discover_urls(request: DiscoverURLRequest) -> DiscoverURLResponse:
-    """Discover URLs from a target website"""
+    """Discover URLs from a target website.
+    
+    This endpoint supports two modes of URL discovery:
+    1. Single mode: Validates and processes a single URL
+    2. Full mode: Performs complete crawling with sitemap processing
+
+    Args:
+        request (DiscoverURLRequest): Contains:
+            - url: Target website URL
+            - mode: "single" or "full"
+
+    Returns:
+        DiscoverURLResponse: Contains discovered URLs and domain info
+
+    Raises:
+        HTTPException: 
+            - 404: If no URLs are discovered
+            - 500: For any other processing errors
+
+    Example:
+        >>> response = await discover_urls(DiscoverURLRequest(
+        ...     url="https://example.com",
+        ...     mode="full"
+        ... ))
+        >>> print(f"Found {len(response.urls)} URLs")
+    """
     try:
         url_manager = URLManager()
         
@@ -79,7 +105,36 @@ async def discover_urls(request: DiscoverURLRequest) -> DiscoverURLResponse:
 
 @router.post("/crawl", response_model=CrawlResponse)
 async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
-    """Crawl selected URLs"""
+    """Crawl a list of URLs and store their content.
+    
+    This endpoint processes each URL through a configurable crawler that:
+    1. Fetches and processes webpage content
+    2. Extracts and saves various content types
+    3. Stores results in Snowflake
+    4. Tracks success/failure for each URL
+
+    Args:
+        request (CrawlRequest): Contains:
+            - urls: List of URLs to crawl
+            - exclude_patterns: Optional regex patterns for URL exclusion
+
+    Returns:
+        CrawlResponse: Contains crawl results for each URL including:
+            - Success/failure status
+            - Paths to saved files
+            - Error messages if applicable
+
+    Raises:
+        HTTPException: 500 status for processing errors
+
+    Example:
+        >>> response = await crawl_urls(CrawlRequest(
+        ...     urls=["https://example.com/page1"],
+        ...     exclude_patterns=["^/private/"]
+        ... ))
+        >>> for result in response.results:
+        ...     print(f"{result.url}: {'Success' if result.success else 'Failed'}")
+    """
     try:
         # Initialize DatabaseManager with Snowflake config
         db = DatabaseManager(config=snowflake_config)
