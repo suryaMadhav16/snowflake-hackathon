@@ -19,7 +19,29 @@ from database.db_manager import DatabaseManager
 logger = logging.getLogger(__name__)
 
 class BatchCrawler:
-    """Handles batched crawling operations with resource management"""
+    """A class for handling batched web crawling operations with resource management.
+    
+    This class provides functionality for crawling multiple URLs in batches, with
+    configurable browser settings, crawl parameters, and URL filtering. It manages
+    resources efficiently and provides detailed metrics about the crawling process.
+
+    Attributes:
+        browser_config (BrowserConfig): Configuration for the browser instance.
+        crawl_config (CrawlerRunConfig): Configuration for crawling behavior.
+        excluded_patterns (List[re.Pattern]): List of compiled regex patterns for URL exclusion.
+        db (DatabaseManager): Database manager instance for storing results.
+        content_processor (ContentProcessor): Processor for handling crawled content.
+        metrics (Dict): Dictionary containing crawling metrics and statistics.
+
+    Example:
+        >>> crawler = BatchCrawler(
+        ...     base_url="https://example.com",
+        ...     excluded_patterns=["^/admin/", "^/private/"]
+        ... )
+        >>> urls = ["https://example.com/page1", "https://example.com/page2"]
+        >>> async for results in crawler.process_batch(urls, batch_size=2):
+        ...     print(f"Processed {len(results)} URLs")
+    """
     
     def __init__(
         self, 
@@ -86,7 +108,22 @@ class BatchCrawler:
         }
     
     def should_skip_url(self, url: str) -> bool:
-        """Check if URL matches any exclusion patterns"""
+        """Check if a URL matches any of the configured exclusion patterns.
+
+        Args:
+            url (str): The URL to check against exclusion patterns.
+
+        Returns:
+            bool: True if the URL should be skipped (matches an exclusion pattern),
+                 False otherwise.
+
+        Example:
+            >>> crawler = BatchCrawler(excluded_patterns=["^/admin/"])
+            >>> crawler.should_skip_url("https://example.com/admin/users")
+            True
+            >>> crawler.should_skip_url("https://example.com/public/page")
+            False
+        """
         if not self.excluded_patterns:
             return False
             
@@ -106,7 +143,20 @@ class BatchCrawler:
             return False
     
     def filter_batch(self, urls: List[str]) -> List[str]:
-        """Filter out URLs that match exclusion patterns"""
+        """Filter a batch of URLs, removing those that match exclusion patterns.
+
+        Args:
+            urls (List[str]): List of URLs to filter.
+
+        Returns:
+            List[str]: Filtered list of URLs that don't match any exclusion patterns.
+
+        Example:
+            >>> crawler = BatchCrawler(excluded_patterns=["^/private/"])
+            >>> urls = ["https://example.com/private/doc", "https://example.com/public/doc"]
+            >>> crawler.filter_batch(urls)
+            ['https://example.com/public/doc']
+        """
         if not self.excluded_patterns:
             return urls
             
@@ -125,7 +175,32 @@ class BatchCrawler:
         urls: List[str], 
         batch_size: int = 10
     ) -> AsyncGenerator[List[CrawlResult], None]:
-        """Process URLs in batches"""
+        """Process a list of URLs in batches, crawling and storing the results.
+
+        This method handles the main crawling workflow, including:
+        - URL filtering
+        - Batch processing
+        - Result storage
+        - Content processing
+        - Metrics tracking
+
+        Args:
+            urls (List[str]): List of URLs to process.
+            batch_size (int, optional): Number of URLs to process in each batch.
+                Defaults to 10.
+
+        Yields:
+            List[CrawlResult]: List of successful crawl results for each batch.
+
+        Raises:
+            Exception: If there's an error processing a batch.
+
+        Example:
+            >>> urls = ["https://example.com/page1", "https://example.com/page2"]
+            >>> async for results in crawler.process_batch(urls, batch_size=2):
+            ...     for result in results:
+            ...         print(f"Crawled {result.url}: {len(result.content)} bytes")
+        """
         # Filter URLs before processing
         urls = self.filter_batch(urls)
         total_urls = len(urls)
@@ -217,5 +292,24 @@ class BatchCrawler:
         logger.info(f"Content saving summary: {self.metrics['saved_content']}")
     
     def get_metrics(self) -> Dict:
-        """Get current crawling metrics"""
+        """Get the current crawling metrics and statistics.
+
+        Returns:
+            Dict: Dictionary containing various metrics including:
+                - successful: Number of successfully crawled URLs
+                - failed: Number of failed crawl attempts
+                - skipped: Number of skipped URLs
+                - start_time: Start time of crawling
+                - end_time: End time of crawling
+                - current_batch: Current batch number
+                - total_batches: Total number of batches
+                - duration: Total crawling duration in seconds
+                - urls_per_second: Average processing rate
+                - saved_content: Count of saved content by type
+
+        Example:
+            >>> metrics = crawler.get_metrics()
+            >>> print(f"Processed {metrics['successful']} URLs successfully")
+            >>> print(f"Average rate: {metrics['urls_per_second']:.2f} URLs/second")
+        """
         return self.metrics.copy()

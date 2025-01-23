@@ -23,7 +23,31 @@ logging.basicConfig(
 )
 
 class URLManager:
-    """Manages URL discovery and tracking for the web crawler with optimized performance"""
+    """A sophisticated URL discovery and management system for web crawling.
+    
+    This class provides advanced functionality for discovering, tracking, and managing URLs
+    during web crawling operations. It includes features such as:
+    - Sitemap discovery and processing
+    - Rate limiting and concurrency control
+    - Performance monitoring and metrics
+    - URL normalization and deduplication
+    - Domain-based filtering
+    
+    Attributes:
+        discovery_config (CrawlerRunConfig): Configuration for URL discovery behavior
+        discovered_urls (Set[str]): Set of all discovered unique URLs
+        processed_urls (Set[str]): Set of URLs that have been processed
+        url_graph (Dict[str, Dict[str, List[str]]]): Graph structure of URL relationships
+        base_domain (str): Base domain for the crawl operation
+        processing_semaphore (asyncio.Semaphore): Global concurrency control
+        domain_semaphores (Dict[str, asyncio.Semaphore]): Per-domain rate limiting
+        performance_metrics (Dict): Detailed metrics about the crawling operation
+
+    Example:
+        >>> manager = URLManager()
+        >>> urls = await manager.discover_urls("https://example.com", max_depth=2)
+        >>> print(f"Discovered {len(urls)} URLs")
+    """
     
     def __init__(self, discovery_config: Optional[CrawlerRunConfig] = None):
         logger.info("Initializing URLManager")
@@ -62,7 +86,26 @@ class URLManager:
         logger.info("URLManager initialized successfully")
         
     async def discover_single_url(self, url: str) -> List[str]:
-        """Quick URL discovery for single page mode - no sitemap or deep crawling"""
+        """Perform quick URL discovery for a single page without deep crawling.
+
+        This method validates and processes a single URL without exploring
+        sitemaps or performing deep crawling operations.
+
+        Args:
+            url (str): The URL to process and validate.
+
+        Returns:
+            List[str]: A list containing the normalized URL if valid,
+                    empty list if validation fails.
+
+        Raises:
+            ValueError: If the URL format is invalid or domain cannot be extracted.
+
+        Example:
+            >>> urls = await manager.discover_single_url("https://example.com")
+            >>> if urls:
+            ...     print("URL is valid and accessible")
+        """
         self.performance_metrics['start_time'] = datetime.now()
         logger.info(f"Starting single URL validation for: {url}")
         
@@ -109,7 +152,24 @@ class URLManager:
             return []
         
     async def _fetch_with_aiohttp(self, url: str, session: aiohttp.ClientSession) -> Tuple[str, bool, str]:
-        """Fetch URL content using aiohttp with rate limiting"""
+        """Fetch URL content using aiohttp with built-in rate limiting.
+
+        Args:
+            url (str): The URL to fetch.
+            session (aiohttp.ClientSession): The session to use for the request.
+
+        Returns:
+            Tuple[str, bool, str]: A tuple containing:
+                - content (str): The fetched content
+                - is_xml (bool): Whether the content is XML
+                - error (str): Error message if any, empty string if successful
+
+        Example:
+            >>> async with aiohttp.ClientSession() as session:
+            ...     content, is_xml, error = await manager._fetch_with_aiohttp(url, session)
+            ...     if not error:
+            ...         print(f"Fetched {len(content)} bytes")
+        """
         domain = urlparse(url).netloc
         start_time = time.time()
         
@@ -145,7 +205,26 @@ class URLManager:
             return '', False, str(e)
             
     async def _process_sitemap_url(self, url: str, session: aiohttp.ClientSession) -> Set[str]:
-        """Process a sitemap URL and return discovered URLs"""
+        """Process a sitemap URL and extract all contained URLs.
+
+        Handles both XML sitemaps and sitemap indexes, including recursive
+        processing of nested sitemaps.
+
+        Args:
+            url (str): The sitemap URL to process.
+            session (aiohttp.ClientSession): The session to use for requests.
+
+        Returns:
+            Set[str]: Set of discovered and normalized URLs from the sitemap.
+
+        Example:
+            >>> async with aiohttp.ClientSession() as session:
+            ...     urls = await manager._process_sitemap_url(
+            ...         "https://example.com/sitemap.xml",
+            ...         session
+            ...     )
+            ...     print(f"Found {len(urls)} URLs in sitemap")
+        """
         logger.info(f"Processing sitemap: {url}")
         start_time = time.time()
         
@@ -253,7 +332,22 @@ class URLManager:
         return all_urls
     
     def _is_same_domain(self, url: str) -> bool:
-        """Check if URL belongs to the same domain"""
+        """Check if a URL belongs to the base domain or its subdomains.
+
+        Args:
+            url (str): The URL to check.
+
+        Returns:
+            bool: True if the URL belongs to the base domain or its subdomains,
+                False otherwise.
+
+        Example:
+            >>> manager.base_domain = "example.com"
+            >>> manager._is_same_domain("https://sub.example.com")
+            True
+            >>> manager._is_same_domain("https://otherdomain.com")
+            False
+        """
         try:
             parsed = urlparse(url)
             domain = parsed.netloc.lower()
@@ -266,7 +360,27 @@ class URLManager:
             return False
     
     def _normalize_url(self, url: str) -> Optional[str]:
-        """Normalize URL by removing fragments and standardizing format"""
+        """Normalize a URL by standardizing its format and removing fragments.
+
+        This method:
+        - Adds https:// if protocol is missing
+        - Removes trailing slashes (except for root path)
+        - Preserves query parameters
+        - Removes fragments
+        - Handles dict inputs with 'url' key
+
+        Args:
+            url (str | Dict): URL string or dictionary containing URL.
+
+        Returns:
+            Optional[str]: Normalized URL if valid, None if invalid.
+
+        Example:
+            >>> manager._normalize_url("example.com/path/")
+            'https://example.com/path'
+            >>> manager._normalize_url("https://example.com/path?q=1")
+            'https://example.com/path?q=1'
+        """
         try:
             if not url:
                 return None
@@ -300,7 +414,23 @@ class URLManager:
             return None
     
     async def _extract_urls_from_html(self, url: str, html_content: str) -> Set[str]:
-        """Extract and normalize URLs from HTML content"""
+        """Extract and normalize URLs from HTML content.
+
+        Args:
+            url (str): The base URL for resolving relative links.
+            html_content (str): The HTML content to parse.
+
+        Returns:
+            Set[str]: Set of normalized, unique URLs found in the HTML.
+
+        Example:
+            >>> urls = await manager._extract_urls_from_html(
+            ...     "https://example.com",
+            ...     "<a href='/page'>Link</a>"
+            ... )
+            >>> print(urls)
+            {'https://example.com/page'}
+        """
         start_time = time.time()
         urls = set()
         try:
@@ -393,7 +523,31 @@ class URLManager:
         return new_urls, url_data
     
     async def discover_urls(self, base_url: str, max_depth: int = 3) -> List[str]:
-        """Discover URLs starting from base_url up to max_depth"""
+        """Discover URLs by crawling from a base URL up to a specified depth.
+
+        This is the main URL discovery method that:
+        1. Processes sitemaps if available
+        2. Performs breadth-first crawling up to max_depth
+        3. Tracks performance metrics
+        4. Handles rate limiting and concurrency
+
+        Args:
+            base_url (str): The starting URL for discovery.
+            max_depth (int, optional): Maximum crawl depth. Defaults to 3.
+
+        Returns:
+            List[str]: List of all discovered unique URLs.
+
+        Raises:
+            ValueError: If base_url is invalid or domain cannot be extracted.
+
+        Example:
+            >>> urls = await manager.discover_urls(
+            ...     "https://example.com",
+            ...     max_depth=2
+            ... )
+            >>> print(f"Found {len(urls)} URLs up to depth 2")
+        """
         self.performance_metrics['start_time'] = datetime.now()
         logger.info(f"Starting URL discovery from {base_url} with max_depth={max_depth}")
         
@@ -479,18 +633,49 @@ class URLManager:
             return []
     
     def get_unprocessed_urls(self) -> List[str]:
-        """Get list of discovered URLs that haven't been processed yet"""
+        """Get a list of discovered URLs that haven't been processed.
+
+        Returns:
+            List[str]: List of URLs that are discovered but not yet processed.
+
+        Example:
+            >>> pending = manager.get_unprocessed_urls()
+            >>> print(f"{len(pending)} URLs pending processing")
+        """
         unprocessed = list(self.discovered_urls - self.processed_urls)
         logger.info(f"Retrieved {len(unprocessed)} unprocessed URLs")
         return unprocessed
     
     def mark_as_processed(self, urls: List[str]):
-        """Mark URLs as processed"""
+        """Mark a list of URLs as processed.
+
+        Args:
+            urls (List[str]): List of URLs to mark as processed.
+
+        Example:
+            >>> manager.mark_as_processed(["https://example.com/page1"])
+        """
         logger.info(f"Marking {len(urls)} URLs as processed")
         self.processed_urls.update(urls)
     
     def get_url_stats(self) -> Dict:
-        """Get statistics about discovered and processed URLs"""
+        """Get comprehensive statistics about URL discovery and processing.
+
+        Returns:
+            Dict: Dictionary containing:
+                - total_discovered: Total number of unique URLs found
+                - total_processed: Number of URLs that have been processed
+                - pending: Number of URLs waiting to be processed
+                - discovered_by_domain: Number of unique domains discovered
+                - processing_time: Total time spent processing (if completed)
+                - urls_per_second: Average processing rate
+
+        Example:
+            >>> stats = manager.get_url_stats()
+            >>> print(f"Processed {stats['total_processed']} of {stats['total_discovered']} URLs")
+            >>> if 'urls_per_second' in stats:
+            ...     print(f"Average rate: {stats['urls_per_second']:.2f} URLs/second")
+        """
         stats = {
             'total_discovered': len(self.discovered_urls),
             'total_processed': len(self.processed_urls),

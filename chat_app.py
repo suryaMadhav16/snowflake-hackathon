@@ -1,8 +1,37 @@
+"""Documentation Assistant Streamlit Application.
+
+This module implements a chat-based documentation assistant using Streamlit and Snowflake.
+It provides functionality for:
+1. Uploading and processing documentation files
+2. Question-answering based on documentation context
+3. Semantic search for relevant content
+4. Report generation from chat conversations
+
+The application uses Snowflake's vector similarity search and LLM capabilities
+for processing and retrieving documentation.
+
+Example:
+    To run the application:
+        $ streamlit run chat_app.py
+"""
+
 import streamlit as st
 import pandas as pd
 from snowflake.snowpark.context import get_active_session
 
 def init_snowflake():
+    """Initialize connection to Snowflake.
+
+    Attempts to get an active Snowflake session for database operations.
+
+    Returns:
+        Session: Active Snowflake session if successful, None otherwise.
+
+    Example:
+        >>> session = init_snowflake()
+        >>> if session:
+        ...     print("Connected to Snowflake")
+    """
     try:
         return get_active_session()
     except Exception as e:
@@ -10,6 +39,25 @@ def init_snowflake():
         return None
 
 def process_uploaded_file(session, uploaded_file):
+    """Process an uploaded documentation file.
+
+    Handles the complete workflow for processing new documentation:
+    1. Uploads file to Snowflake stage
+    2. Processes markdown content
+    3. Chunks the content with overlap
+    4. Generates vector embeddings
+
+    Args:
+        session: Active Snowflake session
+        uploaded_file: StreamlitUploadedFile object
+
+    Returns:
+        bool: True if processing was successful, False otherwise.
+
+    Example:
+        >>> if process_uploaded_file(session, uploaded_file):
+        ...     print("File processed successfully")
+    """
     try:
         # 1. Upload to stage
         file_content = uploaded_file.read()
@@ -98,6 +146,23 @@ def process_uploaded_file(session, uploaded_file):
         return False
 
 def get_similar_chunks(session, question, num_chunks=3, similarity_threshold=0.7):
+    """Retrieve document chunks similar to the input question.
+
+    Uses vector similarity search to find relevant documentation chunks.
+
+    Args:
+        session: Active Snowflake session
+        question (str): User's input question
+        num_chunks (int, optional): Number of chunks to retrieve. Defaults to 3.
+        similarity_threshold (float, optional): Minimum similarity score. Defaults to 0.7.
+
+    Returns:
+        DataFrame: Retrieved chunks with similarity scores.
+
+    Example:
+        >>> chunks = get_similar_chunks(session, "How to configure logging?")
+        >>> print(f"Found {len(chunks)} relevant chunks")
+    """
     cmd = """
         WITH best_match_chunk AS (
             SELECT
@@ -127,6 +192,22 @@ def get_similar_chunks(session, question, num_chunks=3, similarity_threshold=0.7
         return pd.DataFrame()
 
 def generate_response(session, question, context):
+    """Generate an answer using Snowflake's LLM capabilities.
+
+    Uses the provided context to generate a relevant response to the question.
+
+    Args:
+        session: Active Snowflake session
+        question (str): User's question
+        context (str): Retrieved documentation context
+
+    Returns:
+        str: Generated response
+
+    Example:
+        >>> response = generate_response(session, "How to log errors?", context)
+        >>> print(response)
+    """
     prompt = f"""You are an expert assistant helping users understand documentation.
     Answer the question based on the following context. Be concise and accurate.
     If the context doesn't contain relevant information, say so.
@@ -150,6 +231,22 @@ def generate_response(session, question, context):
         return "I encountered an error while generating the response."
 
 def generate_markdown_report(session, messages):
+    """Generate a structured markdown report from chat messages.
+
+    Converts the chat conversation into a well-formatted technical document.
+
+    Args:
+        session: Active Snowflake session
+        messages (List[Dict]): List of chat messages with role and content
+
+    Returns:
+        str: Generated markdown report
+
+    Example:
+        >>> report = generate_markdown_report(session, messages)
+        >>> with open('report.md', 'w') as f:
+        ...     f.write(report)
+    """
     # Convert messages to a structured format for the prompt
     conversation = []
     for msg in messages:
@@ -187,6 +284,15 @@ def generate_markdown_report(session, messages):
         return "Failed to generate report."
 
 def main():
+    """Main application entry point.
+
+    Sets up the Streamlit interface and manages the application flow:
+    - Initializes Snowflake connection
+    - Handles file uploads
+    - Manages chat interface
+    - Provides configuration options
+    - Enables report generation
+    """
     st.set_page_config(page_title="Documentation Assistant", page_icon="📚")
     
     if "messages" not in st.session_state:

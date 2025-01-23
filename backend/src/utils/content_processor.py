@@ -10,10 +10,36 @@ from database.snowflake_manager import SnowflakeManager
 logger = logging.getLogger(__name__)
 
 class ContentProcessor:
-    """Processes and saves crawled content to Snowflake stage"""
+    """A content processor for handling and storing crawled web content in Snowflake.
+    
+    This class manages the processing and storage of various types of web content including:
+    - Markdown content
+    - Images
+    - PDFs
+    - Screenshots
+    
+    The processor handles temporary file management, content encoding/decoding,
+    and uploading to Snowflake stages with appropriate metadata.
+
+    Attributes:
+        domain (str): The domain being processed
+        db (SnowflakeManager): Database manager for Snowflake operations
+        temp_dir (Path): Temporary directory for processing content
+
+    Example:
+        >>> processor = ContentProcessor("example.com")
+        >>> saved_files = await processor.save_content(crawl_result)
+        >>> print(f"Saved {len(saved_files['images'])} images")
+    """
     
     def __init__(self, domain: str, db: SnowflakeManager = None):
-        """Initialize the content processor"""
+        """Initialize the content processor.
+
+        Args:
+            domain (str): The domain being processed
+            db (SnowflakeManager, optional): Snowflake database manager.
+                If not provided, creates a new instance.
+        """
         self.domain = domain
         self.db = db or SnowflakeManager()
         
@@ -24,14 +50,43 @@ class ContentProcessor:
         logger.info(f"Initialized content processor for domain: {domain}")
 
     def _get_safe_filename(self, url: str, ext: str = '') -> str:
-        """Generate safe filename from URL"""
+        """Generate a safe filename from a URL.
+
+        Creates a unique, filesystem-safe filename by hashing the URL
+        and appending the specified extension.
+
+        Args:
+            url (str): The URL to generate filename from
+            ext (str, optional): File extension to append. Defaults to ''.
+
+        Returns:
+            str: A safe filename with the specified extension.
+
+        Example:
+            >>> processor._get_safe_filename("https://example.com/image", ".png")
+            '8793224690273.png'
+        """
         safe_name = str(abs(hash(url)))
         if ext and not ext.startswith('.'):
             ext = '.' + ext
         return safe_name + ext
 
     def _decode_base64(self, data: str) -> Optional[bytes]:
-        """Safely decode base64 data"""
+        """Safely decode base64-encoded data.
+
+        Handles both raw base64 strings and data URLs (with or without content type prefix).
+
+        Args:
+            data (str): The base64-encoded string to decode.
+
+        Returns:
+            Optional[bytes]: Decoded bytes if successful, None if decoding fails.
+
+        Example:
+            >>> data = processor._decode_base64("data:image/png;base64,iVBORw0...")
+            >>> if data:
+            ...     print(f"Decoded {len(data)} bytes")
+        """
         if not data:
             return None
             
@@ -45,7 +100,31 @@ class ContentProcessor:
             return None
 
     async def save_content(self, result) -> Dict[str, List[Dict]]:
-        """Save all content to Snowflake stage"""
+        """Save crawled content to Snowflake stage.
+
+        Processes and stores different types of content including:
+        - Markdown content (with RAG processing)
+        - PDF documents
+        - Images (with metadata)
+        - Page screenshots
+
+        Args:
+            result: The crawl result object containing various content types.
+
+        Returns:
+            Dict[str, List[Dict]]: Dictionary containing saved file information:
+                {
+                    'markdown': [{'url': str, 'file_name': str, ...}],
+                    'images': [{'url': str, 'file_name': str, ...}],
+                    'pdf': [{'url': str, 'file_name': str, ...}],
+                    'screenshot': [{'url': str, 'file_name': str, ...}]
+                }
+
+        Example:
+            >>> saved = await processor.save_content(crawl_result)
+            >>> for content_type, files in saved.items():
+            ...     print(f"Saved {len(files)} {content_type} files")
+        """
         saved_files = {
             'markdown': [],
             'images': [],
@@ -177,7 +256,15 @@ class ContentProcessor:
             return saved_files
 
     async def cleanup_temp_dir(self):
-        """Clean up temporary directory"""
+        """Clean up the temporary processing directory.
+
+        Removes all temporary files and directories created during content processing.
+        Should be called after processing is complete to free up disk space.
+
+        Example:
+            >>> await processor.save_content(result)
+            >>> await processor.cleanup_temp_dir()  # Clean up after processing
+        """
         try:
             if self.temp_dir.exists():
                 for file in self.temp_dir.glob('*'):
@@ -190,7 +277,19 @@ class ContentProcessor:
             logger.error(f"Error cleaning up temp directory: {e}")
 
     async def get_storage_info(self) -> Dict:
-        """Get storage usage information from Snowflake"""
+        """Get storage usage statistics from Snowflake.
+
+        Returns:
+            Dict: Storage statistics including:
+                - Total storage used
+                - Storage by content type
+                - File counts
+                - Stage information
+
+        Example:
+            >>> stats = await processor.get_storage_info()
+            >>> print(f"Total storage used: {stats.get('total_size', 0)} bytes")
+        """
         try:
             return await self.db.get_stats()
         except Exception as e:
