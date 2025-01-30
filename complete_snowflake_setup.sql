@@ -1,8 +1,11 @@
 -- Initial Setup
 USE ROLE ACCOUNTADMIN;
 
--- Create warehouse
-CREATE OR REPLACE WAREHOUSE MEDIUM_WAREHOUSE 
+-- POTENTIAL BUG #1: Warehouse sizing and auto-suspend
+-- Auto-suspend of 300 seconds might be too short for long-running vector operations
+-- Solution: Consider increasing AUTO_SUSPEND for vector processing workloads
+-- Also consider using WAREHOUSE_SIZE = 'LARGE' for faster vector processing
+CREATE OR REPLACE WAREHOUSE MEDIUM 
     WAREHOUSE_SIZE = 'MEDIUM' 
     AUTO_SUSPEND = 300 
     AUTO_RESUME = TRUE;
@@ -12,11 +15,13 @@ CREATE OR REPLACE DATABASE LLM;
 CREATE OR REPLACE SCHEMA LLM.RAG;
 
 -- Set context
-USE WAREHOUSE MEDIUM_WAREHOUSE;
+USE WAREHOUSE MEDIUM;
 USE DATABASE LLM;
 USE SCHEMA RAG;
 
--- Create stage for storing files
+-- POTENTIAL BUG #2: Stage file format mismatch
+-- Current stage expects CSV but markdown files are being processed
+-- Solution: Consider adding additional file formats or separate stages for different file types
 CREATE OR REPLACE STAGE DOCUMENTATIONS
     DIRECTORY = (
         ENABLE = TRUE
@@ -30,6 +35,9 @@ CREATE OR REPLACE STAGE DOCUMENTATIONS
 
 -- Create tables
 -- Main documentations table
+-- POTENTIAL BUG #3: Text field size limitation
+-- TEXT data type might truncate large documents
+-- Solution: Consider using VARIANT or LARGE_OBJECT for CONTENTS
 CREATE OR REPLACE TABLE DOCUMENTATIONS (
     FILE_NAME TEXT NOT NULL PRIMARY KEY,
     CONTENTS TEXT,
@@ -46,7 +54,9 @@ CREATE OR REPLACE TABLE DOCUMENTATIONS_CHUNKED (
     PRIMARY KEY (FILE_NAME, CHUNK_NUMBER)
 );
 
--- Vector embeddings table
+-- POTENTIAL BUG #4: Vector dimensionality mismatch
+-- No explicit check for vector dimensions (768) in table definition
+-- Solution: Add constraint or validation for vector size
 CREATE OR REPLACE TABLE DOCUMENTATIONS_CHUNKED_VECTORS (
     FILE_NAME TEXT NOT NULL,
     CHUNK_NUMBER NUMBER NOT NULL,
@@ -106,7 +116,9 @@ CREATE OR REPLACE TABLE DISCOVERY_RESULTS (
     COMPLETED_AT TIMESTAMP_NTZ
 );
 
--- Create UDF for markdown processing
+-- POTENTIAL BUG #5: Python UDF memory limitations
+-- Large markdown files might exceed UDF memory limits
+-- Solution: Add error handling for large files and implement chunking
 CREATE OR REPLACE FUNCTION PY_READ_MARKDOWN(file STRING)
     RETURNS STRING 
     LANGUAGE PYTHON
@@ -145,7 +157,9 @@ def read_file(file_path):
         return plain_text
 $$;
 
--- Create procedure for syncing content
+-- POTENTIAL BUG #6: Content sync race conditions
+-- Multiple syncs running simultaneously could cause conflicts
+-- Solution: Add locking mechanism or sync status tracking
 CREATE OR REPLACE PROCEDURE SYNC_CRAWL_CONTENT()
     RETURNS VARIANT
     LANGUAGE SQL
@@ -174,6 +188,9 @@ BEGIN
     
     SET rows_inserted = SQLROWCOUNT;
 
+    -- POTENTIAL BUG #7: SEQ4() limitations
+    -- SEQ4() might not generate enough sequences for very large documents
+    -- Solution: Use a more scalable chunking approach
     -- Step 2: Create chunks for new documents
     INSERT INTO DOCUMENTATIONS_CHUNKED (
         FILE_NAME,
@@ -213,6 +230,9 @@ BEGIN
         ) as COMBINED_CHUNK_TEXT
     FROM chunk_ranges cr;
 
+    -- POTENTIAL BUG #8: Cortex API rate limits
+    -- Batch vector generation might hit API limits
+    -- Solution: Add rate limiting and batch size controls
     -- Step 3: Generate embeddings for new chunks
     INSERT INTO DOCUMENTATIONS_CHUNKED_VECTORS (
         FILE_NAME,
@@ -257,7 +277,9 @@ EXCEPTION
 END;
 $$;
 
--- Create function to answer queries using RAG
+-- POTENTIAL BUG #9: Query timeout for large context windows
+-- Long context assembly might cause query timeout
+-- Solution: Add timeout configuration and handle partial results
 CREATE OR REPLACE FUNCTION ANSWER_QUERY(query_text STRING)
 RETURNS TABLE (response STRING, file_name STRING, chunk_text STRING, chunk_number NUMBER, similarity FLOAT)
 AS
@@ -294,7 +316,9 @@ SELECT
 FROM similar_chunks
 $$;
 
--- Create procedure to chunk documents
+-- POTENTIAL BUG #10: Chunking edge cases
+-- Fixed chunk sizes might split important context
+-- Solution: Consider semantic chunking or adjust overlap size dynamically
 CREATE OR REPLACE PROCEDURE CHUNK_DOCUMENTS(
     chunk_size NUMBER DEFAULT 3000,
     overlap_size NUMBER DEFAULT 1000
@@ -389,7 +413,9 @@ EXCEPTION
 END;
 $$;
 
--- Create stored procedure to clean up old data
+-- POTENTIAL BUG #11: Cascade delete not implemented
+-- Cleanup might leave orphaned records
+-- Solution: Add cascade delete or proper cleanup order
 CREATE OR REPLACE PROCEDURE CLEANUP_OLD_DATA(days_to_keep NUMBER)
 RETURNS VARIANT
 LANGUAGE SQL
@@ -401,32 +427,6 @@ BEGIN
     -- Delete old data from all tables
     DELETE FROM DOCUMENTATIONS_CHUNKED_VECTORS
     WHERE CREATED_AT < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-    
-    DELETE FROM DOCUMENTATIONS_CHUNKED
-    WHERE CREATED_AT < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-    
-    DELETE FROM DOCUMENTATIONS
-    WHERE CREATED_AT < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-    
-    DELETE FROM CRAWL_METADATA
-    WHERE TIMESTAMP < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-    
-    DELETE FROM TASK_METRICS
-    WHERE TIMESTAMP < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-    
-    DELETE FROM TASKS
-    WHERE CREATED_AT < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-    
-    DELETE FROM DISCOVERY_RESULTS
-    WHERE CREATED_AT < DATEADD(day, -days_to_keep, CURRENT_TIMESTAMP());
-
-    -- Return result
-    SELECT OBJECT_CONSTRUCT(
-        'status', 'success',
-        'message', 'Successfully cleaned up data older than ' || days_to_keep || ' days'
-    ) INTO :result;
-
-    RETURN result;
 
 EXCEPTION
     WHEN OTHER THEN
@@ -441,7 +441,7 @@ END;
 $$;
 
 -- Grant necessary privileges
-GRANT USAGE ON WAREHOUSE MEDIUM_WAREHOUSE TO ROLE ACCOUNTADMIN;
+GRANT USAGE ON WAREHOUSE MEDIUM TO ROLE ACCOUNTADMIN;
 GRANT ALL ON DATABASE LLM TO ROLE ACCOUNTADMIN;
 GRANT ALL ON ALL SCHEMAS IN DATABASE LLM TO ROLE ACCOUNTADMIN;
 GRANT ALL ON ALL TABLES IN SCHEMA LLM.RAG TO ROLE ACCOUNTADMIN;
