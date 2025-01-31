@@ -63,7 +63,8 @@ class DatabaseManager(SnowflakeManager):
                     'FILE_TYPE': file_type,
                     'SIZE': file_path.stat().st_size if file_path.exists() else 0,
                     'CONTENT_TYPE': content_type,
-                    'METADATA': metadata
+                    'METADATA': metadata,
+                    'FILE_PATH': f"@{self.database}.{self.schema}.DOCUMENTATIONS/{stage_path}",
                 }
                 logger.info(f"File uploaded successfully, saving metadata")
                 return await self.save_file_metadata(url, file_info)

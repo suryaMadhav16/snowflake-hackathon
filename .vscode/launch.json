@@ -1,34 +1,43 @@
 {
     "version": "0.2.0",
     "configurations": [
-      {
-        "type": "debugpy",
-        "request": "launch",
-        "name": "Launch Backend",
-        "program": "${workspaceFolder}/backend/main.py",        
-        "console": "integratedTerminal",
-        "envFile": "${workspaceFolder}/backend/.env",
-        "cwd": "${workspaceFolder}/backend"
-      },
-      {
-        "type": "debugpy",
-        "request": "launch",
-        "name": "Launch Frontend",
-        "program": "${workspaceFolder}/frontend/app/main.py",
-        "console": "integratedTerminal",
-        "envFile": "${workspaceFolder}/.env"
-      }
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch Backend",
+            "program": "${workspaceFolder}/backend/main.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/backend/.env",
+            "cwd": "${workspaceFolder}/backend",
+            "justMyCode": true
+        },
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch Frontend (Streamlit)",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "${workspaceFolder}/frontend/main.py",
+                "--server.port",
+                "8501"
+            ],
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}/frontend",
+            "justMyCode": true
+        }
     ],
     "inputs": [
-      {
-        "type": "promptString",
-        "id": "backendEnvFile",
-        "description": "Path to the backend environment file"
-      },
-      {
-        "type": "promptString",
-        "id": "frontendEnvFile",
-        "description": "Path to the frontend environment file"
-      }
+        {
+            "type": "promptString",
+            "id": "backendEnvFile",
+            "description": "Path to the backend environment file"
+        },
+        {
+            "type": "promptString",
+            "id": "frontendEnvFile", 
+            "description": "Path to the frontend environment file"
+        }
     ]
-  }
+}
