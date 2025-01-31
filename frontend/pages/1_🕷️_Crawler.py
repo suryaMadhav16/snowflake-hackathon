@@ -77,6 +77,7 @@ def init_snowflake():
         st.error(f"Failed to connect to Snowflake: {str(e)}")
         return None
 
+
 def process_crawl_results(session, results):
     """Insert raw content into DOCUMENTATIONS, split into chunks, and create vectors."""
     logger.info(f"Starting to process {len(results)} crawl results")
@@ -85,9 +86,6 @@ def process_crawl_results(session, results):
             logger.debug(f"Processing result {index + 1}/{len(results)}")
             if not result.get("success"):
                 continue
-            
-            domain = urllib.parse.urlparse(result["url"]).netloc
-            st.session_state.crawled_domains.add(domain)
             
             # 1) Insert raw markdown into DOCUMENTATIONS
             insert_docs_sql = """
@@ -103,15 +101,21 @@ def process_crawl_results(session, results):
                 logger.error(f"Failed to insert data for URL {result['url']}: {str(e)}\n{traceback.format_exc()}")
                 continue
             
-            # 2) Chunk the newly-inserted content and store in DOCUMENTATIONS_CHUNKED
-            #    using SNOWFLAKE.CORTEX.SPLIT_TEXT_RECURSIVE_CHARACTER
+            # 2) Chunk the newly-inserted content. 
+            #    Column names must match what actually exists in DOCUMENTATIONS_CHUNKED_VECTORS:
+            #      FILE_NAME, CHUNK_NUMBER, COMBINED_CHUNK_TEXT, COMBINED_CHUNK_VECTOR
+            #    If you just want to insert the text first, do so here:
             chunk_sql = """
-                INSERT INTO LLM.RAG.DOCUMENTATIONS_CHUNKED (url, chunk_number, chunk_text, combined_chunk_text)
+                INSERT INTO LLM.RAG.DOCUMENTATIONS_CHUNKED_VECTORS (
+                    FILE_NAME,
+                    CHUNK_NUMBER,
+                    COMBINED_CHUNK_TEXT
+                )
                 SELECT 
-                    d.FILE_NAME AS url,
-                    ROW_NUMBER() OVER (PARTITION BY d.FILE_NAME ORDER BY chunk.seq) AS chunk_number,
-                    chunk.value::TEXT AS chunk_text,
-                    CONCAT('Content from page [', d.FILE_NAME, ']: ', chunk.value::TEXT) AS combined_chunk_text
+                    d.FILE_NAME AS FILE_NAME,
+                    ROW_NUMBER() OVER (PARTITION BY d.FILE_NAME ORDER BY chunk.seq) AS CHUNK_NUMBER,
+                    CONCAT('Content from page [', d.FILE_NAME, ']: ', chunk.value::TEXT)
+                    AS COMBINED_CHUNK_TEXT
                 FROM LLM.RAG.DOCUMENTATIONS d,
                      LATERAL FLATTEN(input => SNOWFLAKE.CORTEX.SPLIT_TEXT_RECURSIVE_CHARACTER(
                          d.CONTENTS,
@@ -127,24 +131,18 @@ def process_crawl_results(session, results):
                 logger.error(f"Failed to chunk content for {result['url']}: {str(e)}\n{traceback.format_exc()}")
                 continue
             
-            # 3) Generate embeddings from the chunked data
+            # 3) Now generate embeddings from the chunked data if you wish.
+            #    We can update the same rows (upsert style) or insert again.
+            #    One approach is an UPDATE to fill in COMBINED_CHUNK_VECTOR, 
+            #    or a separate INSERT ... SELECT if you want to handle them in new rows. 
+            #    Here’s an example of an UPDATE approach:
             vector_sql = """
-                INSERT INTO LLM.RAG.DOCUMENTATIONS_CHUNKED_VECTORS (
-                    FILE_NAME,
-                    CHUNK_NUMBER,
-                    COMBINED_CHUNK_TEXT,
-                    COMBINED_CHUNK_VECTOR
-                )
-                SELECT 
-                    url AS FILE_NAME,
-                    chunk_number,
-                    combined_chunk_text,
-                    SNOWFLAKE.CORTEX.EMBED_TEXT_768(
-                        'snowflake-arctic-embed-m-v1.5',
-                        combined_chunk_text
-                    )::VECTOR(FLOAT, 768)
-                FROM LLM.RAG.DOCUMENTATIONS_CHUNKED
-                WHERE url = ?
+                UPDATE LLM.RAG.DOCUMENTATIONS_CHUNKED_VECTORS
+                SET COMBINED_CHUNK_VECTOR = SNOWFLAKE.CORTEX.EMBED_TEXT_768(
+                    'snowflake-arctic-embed-m-v1.5',
+                    COMBINED_CHUNK_TEXT
+                )::VECTOR(FLOAT, 768)
+                WHERE FILE_NAME = ?
             """
             try:
                 session.sql(vector_sql, params=[result["url"]]).collect()

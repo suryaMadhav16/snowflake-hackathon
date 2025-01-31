@@ -55,12 +55,12 @@ def get_similar_chunks(session, question, num_chunks=3, similarity_threshold=0.7
     try:
         query = """
         WITH embedded_question AS (
-            SELECT SNOWFLAKE.CORTEX.EMBED_TEXT_768('snowflake-arctic-embed-m-v1.5', ?) as question_vector
+            SELECT SNOWFLAKE.CORTEX.EMBED_TEXT_768('snowflake-arctic-embed-m-v1.5', ?) AS question_vector
         )
         SELECT
             file_name,
             chunk_number,
-            chunk_text,
+            combined_chunk_text AS chunk_text,
             VECTOR_COSINE_SIMILARITY(
                 combined_chunk_vector, 
                 (SELECT question_vector FROM embedded_question)
@@ -78,7 +78,7 @@ def get_similar_chunks(session, question, num_chunks=3, similarity_threshold=0.7
         """
         
         logger.debug(f"Executing query with parameters: {[question, similarity_threshold, num_chunks]}")
-        result = session.sql(query).bind([question, similarity_threshold, num_chunks]).collect()
+        result = session.sql(query, params=[question, similarity_threshold, num_chunks]).collect()
         df = pd.DataFrame(result)
         
         if df.empty:
@@ -123,7 +123,7 @@ def generate_response(session, question, context=None):
         """
         
         logger.debug("Executing Cortex query")
-        result = session.sql(query).bind([question, context, context]).collect()
+        result = session.sql(query, params=[question, context, context]).collect()
         response = result[0]["RESPONSE"]
         logger.info("Response generated successfully")
         return response
