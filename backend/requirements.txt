@@ -1,13 +1,12 @@
-# Existing requirements
 fastapi
 uvicorn
 python-multipart
-python-magic
 crawl4ai
 aiosqlite
-
-# Added Snowflake requirements
 snowflake-connector-python
 snowflake-sqlalchemy
 pandas
-python-magic
+python-dotenv
+requests
+logging
+pydantic

@@ -152,11 +152,12 @@ async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
             for result in batch_results:
                 # Get saved files for this result from database
                 saved_files = {}
+                
                 if result.success:
                     files = await db.get_saved_files(result.url)
                     for file in files:
-                        saved_files[file['FILE_TYPE']] = file['FILE_PATH']
-                
+                        print(f"Found saved file: {file['URL']}")
+                        saved_files[file['FILE_NAME']] = file['URL']
                 results.append(CrawlResult(
                     url=result.url,
                     success=result.success,

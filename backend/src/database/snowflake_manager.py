@@ -97,8 +97,12 @@ class SnowflakeManager:
                         proc_result = results[0]
                         # Handle SYNC_CRAWL_CONTENT procedure specifically
                         if 'SYNC_CRAWL_CONTENT' in query:
-                            result_obj = proc_result.get('SYNC_CRAWL_CONTENT', {})
-                            if isinstance(result_obj, dict):
+                            result_obj = proc_result.get('SYNC_CRAWL_CONTENT')
+                            # Handle string results
+                            if isinstance(result_obj, str):
+                                logger.info(f"Procedure completed with result: {result_obj}")
+                            # Handle dictionary results
+                            elif isinstance(result_obj, dict):
                                 if result_obj.get('status') == 'error':
                                     error_info = result_obj.get('error', {})
                                     error_msg = f"Stored procedure error: {error_info.get('message', 'Unknown error')}"
@@ -106,6 +110,8 @@ class SnowflakeManager:
                                     raise Exception(error_msg)
                                 elif result_obj.get('status') == 'success':
                                     logger.info(f"Procedure successful: {result_obj.get('message')}")
+                            else:
+                                logger.info(f"Procedure completed with unexpected result type: {type(result_obj)}")
                 
                 return results
             
@@ -321,11 +327,18 @@ class SnowflakeManager:
                 )
                 
                 if sync_result and len(sync_result) > 0:
-                    result_obj = sync_result[0].get('SYNC_CRAWL_CONTENT', {})
-                    if result_obj.get('status') == 'success':
-                        logger.info(f"Content sync successful: {result_obj.get('message')} ({result_obj.get('rows_processed')} rows processed)")
+                    result_obj = sync_result[0].get('SYNC_CRAWL_CONTENT')
+                    # Handle string results
+                    if isinstance(result_obj, str):
+                        logger.info(f"Content sync completed with result: {result_obj}")
+                    # Handle dictionary results
+                    elif isinstance(result_obj, dict):
+                        if result_obj.get('status') == 'success':
+                            logger.info(f"Content sync successful: {result_obj.get('message')} ({result_obj.get('rows_processed')} rows processed)")
+                        else:
+                            logger.error(f"Content sync failed: {result_obj.get('error', {}).get('message', 'Unknown error')}")
                     else:
-                        logger.error(f"Content sync failed: {result_obj.get('error', {}).get('message', 'Unknown error')}")
+                        logger.info(f"Content sync completed with unexpected result type: {type(result_obj)}")
                 
                 logger.info("Successfully saved results and synced content")
                 
@@ -333,7 +346,58 @@ class SnowflakeManager:
             logger.error(f"Error saving results: {str(e)}")
             raise
 
-    # ... [Rest of the class methods remain the same]
+    async def get_stats(self) -> Dict:
+        """Get crawler statistics from Snowflake"""
+        try:
+            logger.info("Fetching crawler statistics")
+            crawl_query = f"""
+                SELECT 
+                    COUNT(*) as TOTAL_URLS,
+                    COUNT_IF(SUCCESS) as SUCCESSFUL_URLS,
+                    COUNT_IF(NOT SUCCESS) as FAILED_URLS
+                FROM {self.database}.{self.schema}.CRAWL_METADATA
+            """
+            
+            file_query = f"""
+                SELECT 
+                    FILE_TYPE,
+                    COUNT(*) as COUNT,
+                    SUM(SIZE) as TOTAL_SIZE
+                FROM {self.database}.{self.schema}.CRAWL_METADATA
+                WHERE FILE_TYPE IS NOT NULL
+                GROUP BY FILE_TYPE
+            """
+            
+            crawl_results = await self._execute_query(crawl_query)
+            file_results = await self._execute_query(file_query)
+            
+            crawl_stats = normalize_response(crawl_results[0]) if crawl_results else {
+                'TOTAL_URLS': 0,
+                'SUCCESSFUL_URLS': 0,
+                'FAILED_URLS': 0
+            }
+            
+            file_stats = {}
+            if file_results:
+                for row in file_results:
+                    row = normalize_response(row)
+                    file_stats[row['FILE_TYPE']] = {
+                        'COUNT': row['COUNT'],
+                        'TOTAL_SIZE': row['TOTAL_SIZE']
+                    }
+            
+            stats = {
+                'CRAWL_STATS': crawl_stats,
+                'FILE_STATS': file_stats,
+                'LAST_UPDATE': datetime.now().isoformat()
+            }
+            logger.info(f"Statistics: {stats}")
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting stats: {str(e)}")
+            return {}
+    
     
     async def close(self):
         """Close Snowflake connection"""
