@@ -133,4 +133,4 @@ SNOWFLAKE_SCHEMA=your_schema
 3. Common Solutions
    - Clear browser cache
    - Restart both servers
-   - Check log files in both frontend and backend directories
+   - Check log
