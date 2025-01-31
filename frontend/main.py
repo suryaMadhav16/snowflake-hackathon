@@ -1,23 +1,9 @@
+"""Main entry point for the Streamlit application."""
+
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
 
-# Initialize Snowflake connection
-@st.cache_resource
-def init_snowflake():
-    try:
-        return get_active_session()
-    except Exception as e:
-        st.error(f"Failed to connect to Snowflake: {str(e)}")
-        return None
-
-def main():
-    st.set_page_config(
-        page_title="Web Crawler & RAG Chat",
-        page_icon="🌐",
-        layout="wide"
-    )
-    
-    # Initialize session states
+def initialize_session_state():
+    """Initialize all session state variables"""
     if 'discovered_urls' not in st.session_state:
         st.session_state.discovered_urls = None
     if 'domain' not in st.session_state:
@@ -28,7 +14,19 @@ def main():
         st.session_state.crawled_domains = set()
     if 'messages' not in st.session_state:
         st.session_state.messages = []
+
+def main():
+    """Main application entry point"""
+    st.set_page_config(
+        page_title="Web Crawler & RAG Chat",
+        page_icon="🌐",
+        layout="wide"
+    )
     
+    # Initialize session state
+    initialize_session_state()
+    
+    # Render main page content
     st.title("🌐 Web Crawler & RAG Chat")
     st.markdown("""
     Welcome! Choose from the pages in the sidebar:

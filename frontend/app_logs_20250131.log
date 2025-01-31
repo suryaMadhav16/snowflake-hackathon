@@ -1,0 +1,23 @@
+2025-01-31 16:25:23,815 - INFO - Starting chat application
+2025-01-31 16:25:23,816 - INFO - Initializing Snowflake connection...
+2025-01-31 16:25:23,819 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-01-31 16:25:23,820 - INFO - Connecting to GLOBAL Snowflake domain
+2025-01-31 16:25:23,820 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-01-31 16:25:24,315 - INFO - Snowpark Session information: 
+"version" : 1.26.0,
+"python.version" : 3.11.11,
+"python.connector.version" : 3.12.4,
+"python.connector.session.id" : 3043392353736038,
+"os.name" : Darwin
+
+2025-01-31 16:25:24,486 - INFO - Number of results in first chunk: 1
+2025-01-31 16:25:24,602 - INFO - Number of results in first chunk: 1
+2025-01-31 16:25:24,706 - INFO - Number of results in first chunk: 1
+2025-01-31 16:25:24,706 - INFO - Successfully ensured all required tables exist
+2025-01-31 16:25:24,706 - INFO - Successfully initialized Snowflake connection
+2025-01-31 16:25:34,366 - INFO - Starting chat application
+2025-01-31 16:25:34,382 - INFO - New question received: what do you know about crawl4ai?...
+2025-01-31 16:25:35,142 - INFO - Number of results in first chunk: 0
+2025-01-31 16:25:35,145 - WARNING - No relevant chunks found, generating response without context
+2025-01-31 16:25:37,187 - INFO - Number of results in first chunk: 1
+2025-01-31 16:25:37,194 - INFO - Response displayed and added to chat history

@@ -1,13 +1,13 @@
 import streamlit as st
+import logging
+import traceback
+import asyncio
+from datetime import datetime
 from services.api_client import APIClient
+from services.content_processor import ContentProcessor
 from components.url_input import render_url_input
 from components.url_selector import render_url_selector
 from components.results import render_results
-from snowflake.snowpark import Session
-import urllib.parse
-import logging
-import traceback
-from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -19,8 +19,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-conn = st.connection("snowflake")
 
 def initialize_session_state():
     if "discovered_urls" not in st.session_state:
@@ -37,137 +35,33 @@ def get_api_client():
     return APIClient()
 
 @st.cache_resource
-def init_snowflake():
-    """Initialize Snowflake session with error handling and logging"""
-    logger.info("Initializing Snowflake session...")
-    try:
-        session_parameters = {
-            "account": st.secrets["snowflake"]["account"],
-            "user": st.secrets["snowflake"]["user"],
-            "warehouse": st.secrets["snowflake"]["warehouse"],
-            "database": st.secrets["snowflake"]["database"],
-            "schema": st.secrets["snowflake"]["schema"]
-        }
-        if "password" in st.secrets["snowflake"]:
-            session_parameters["password"] = st.secrets["snowflake"]["password"]
-        elif "private_key" in st.secrets["snowflake"]:
-            session_parameters["private_key"] = st.secrets["snowflake"]["private_key"]
-        elif "authenticator" in st.secrets["snowflake"]:
-            session_parameters["authenticator"] = st.secrets["snowflake"]["authenticator"]
-            
-        session = Session.builder.configs(session_parameters).create()
-        logger.info("Successfully connected to Snowflake")
-        
-        # Ensure the newly-added DOCUMENTATIONS_CHUNKED table exists:
-        session.sql("""
-            CREATE TABLE IF NOT EXISTS LLM.RAG.DOCUMENTATIONS_CHUNKED (
-                url TEXT,
-                chunk_number NUMBER,
-                chunk_text TEXT,
-                combined_chunk_text TEXT,
-                CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
-            )
-        """).collect()
-        
-        return session
-    
-    except Exception as e:
-        error_details = traceback.format_exc()
-        logger.error(f"Snowflake connection failed: {str(e)}\n{error_details}")
-        st.error(f"Failed to connect to Snowflake: {str(e)}")
-        return None
+def get_content_processor():
+    return ContentProcessor()
 
-
-def process_crawl_results(session, results):
-    """Insert raw content into DOCUMENTATIONS, split into chunks, and create vectors."""
-    logger.info(f"Starting to process {len(results)} crawl results")
+async def process_content(content_processor, results):
+    """Process crawled content asynchronously"""
     try:
-        for index, result in enumerate(results):
-            logger.debug(f"Processing result {index + 1}/{len(results)}")
-            if not result.get("success"):
-                continue
-            
-            # 1) Insert raw markdown into DOCUMENTATIONS
-            insert_docs_sql = """
-                INSERT INTO LLM.RAG.DOCUMENTATIONS (FILE_NAME, CONTENTS)
-                VALUES (?, ?)
-            """
-            try:
-                session.sql(insert_docs_sql, params=[
-                    result["url"],
-                    result.get("markdown", "")
-                ]).collect()
-            except Exception as e:
-                logger.error(f"Failed to insert data for URL {result['url']}: {str(e)}\n{traceback.format_exc()}")
-                continue
-            
-            # 2) Chunk the newly-inserted content. 
-            #    Column names must match what actually exists in DOCUMENTATIONS_CHUNKED_VECTORS:
-            #      FILE_NAME, CHUNK_NUMBER, COMBINED_CHUNK_TEXT, COMBINED_CHUNK_VECTOR
-            #    If you just want to insert the text first, do so here:
-            chunk_sql = """
-                INSERT INTO LLM.RAG.DOCUMENTATIONS_CHUNKED_VECTORS (
-                    FILE_NAME,
-                    CHUNK_NUMBER,
-                    COMBINED_CHUNK_TEXT
-                )
-                SELECT 
-                    d.FILE_NAME AS FILE_NAME,
-                    ROW_NUMBER() OVER (PARTITION BY d.FILE_NAME ORDER BY chunk.seq) AS CHUNK_NUMBER,
-                    CONCAT('Content from page [', d.FILE_NAME, ']: ', chunk.value::TEXT)
-                    AS COMBINED_CHUNK_TEXT
-                FROM LLM.RAG.DOCUMENTATIONS d,
-                     LATERAL FLATTEN(input => SNOWFLAKE.CORTEX.SPLIT_TEXT_RECURSIVE_CHARACTER(
-                         d.CONTENTS,
-                         'markdown',
-                         512,
-                         50
-                     )) chunk
-                WHERE d.FILE_NAME = ?
-            """
-            try:
-                session.sql(chunk_sql, params=[result["url"]]).collect()
-            except Exception as e:
-                logger.error(f"Failed to chunk content for {result['url']}: {str(e)}\n{traceback.format_exc()}")
-                continue
-            
-            # 3) Now generate embeddings from the chunked data if you wish.
-            #    We can update the same rows (upsert style) or insert again.
-            #    One approach is an UPDATE to fill in COMBINED_CHUNK_VECTOR, 
-            #    or a separate INSERT ... SELECT if you want to handle them in new rows. 
-            #    Here’s an example of an UPDATE approach:
-            vector_sql = """
-                UPDATE LLM.RAG.DOCUMENTATIONS_CHUNKED_VECTORS
-                SET COMBINED_CHUNK_VECTOR = SNOWFLAKE.CORTEX.EMBED_TEXT_768(
-                    'snowflake-arctic-embed-m-v1.5',
-                    COMBINED_CHUNK_TEXT
-                )::VECTOR(FLOAT, 768)
-                WHERE FILE_NAME = ?
-            """
-            try:
-                session.sql(vector_sql, params=[result["url"]]).collect()
-            except Exception as e:
-                logger.error(f"Failed to generate vectors for URL {result['url']}: {str(e)}\n{traceback.format_exc()}")
-                raise
-            
-        logger.info("Successfully completed processing all results")
-        st.success("Successfully processed content for RAG")
-        
+        with st.spinner("Processing content for RAG..."):
+            success = await content_processor.process_crawl_results(results)
+            if not success:
+                st.warning("Some content could not be processed. Check the logs for details.")
+            return success
     except Exception as e:
-        error_msg = f"Error processing results for RAG: {str(e)}"
+        error_msg = f"Content processing failed: {str(e)}"
         logger.error(f"{error_msg}\n{traceback.format_exc()}")
         st.error(error_msg)
+        return False
 
-def main():
+async def main():
     logger.info("Starting crawler application")
     st.title("🕷️ Web Crawler")
     
+    # Initialize components
     initialize_session_state()
     api_client = get_api_client()
-    session = init_snowflake()
-    if not session:
-        st.stop()
+    content_processor = get_content_processor()
     
+    # URL Input and Discovery
     url, mode, discover_clicked = render_url_input()
     
     if discover_clicked:
@@ -184,6 +78,7 @@ def main():
                 st.session_state.discovered_urls = None
                 st.session_state.domain = None
     
+    # URL Selection and Crawling
     if st.session_state.discovered_urls:
         selected_urls, exclude_patterns = render_url_selector(
             st.session_state.discovered_urls,
@@ -193,17 +88,20 @@ def main():
             if st.button("Start Crawling", type="primary"):
                 with st.spinner("Crawling selected URLs..."):
                     try:
+                        # Crawl URLs
                         response = api_client.crawl_urls(selected_urls, exclude_patterns)
                         st.session_state.crawl_results = response["results"]
                         
-                        with st.spinner("Processing content for RAG..."):
-                            process_crawl_results(session, st.session_state.crawl_results)
+                        # Process content
+                        await process_content(content_processor, st.session_state.crawl_results)
+                                
                     except Exception as e:
                         error_msg = f"Crawling failed: {str(e)}"
                         logger.error(f"{error_msg}\n{traceback.format_exc()}")
                         st.error(error_msg)
                         st.session_state.crawl_results = None
         
+        # Display Results
         if st.session_state.crawl_results:
             render_results(st.session_state.crawl_results)
             
@@ -214,4 +112,8 @@ def main():
                 st.rerun()
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.critical(f"Critical application error: {str(e)}", exc_info=True)
+        st.error("A critical error occurred. Please check the logs for details.")
