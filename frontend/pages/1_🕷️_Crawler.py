@@ -1,10 +1,8 @@
 import streamlit as st
 import logging
 import traceback
-import asyncio
 from datetime import datetime
 from services.api_client import APIClient
-from services.content_processor import ContentProcessor
 from components.url_input import render_url_input
 from components.url_selector import render_url_selector
 from components.results import render_results
@@ -34,15 +32,11 @@ def initialize_session_state():
 def get_api_client():
     return APIClient()
 
-@st.cache_resource
-def get_content_processor():
-    return ContentProcessor()
-
-async def process_content(content_processor, results):
-    """Process crawled content asynchronously"""
+def process_content(content_processor, results):
+    """Process crawled content"""
     try:
         with st.spinner("Processing content for RAG..."):
-            success = await content_processor.process_crawl_results(results)
+            success = content_processor.process_crawl_results(results)
             if not success:
                 st.warning("Some content could not be processed. Check the logs for details.")
             return success
@@ -52,10 +46,9 @@ async def process_content(content_processor, results):
         st.error(error_msg)
         return False
 
-async def main():
+def main():
     logger.info("Starting crawler application")
     st.title("🕷️ Web Crawler")
-    
     # Initialize components
     initialize_session_state()
     api_client = get_api_client()
@@ -93,7 +86,7 @@ async def main():
                         st.session_state.crawl_results = response["results"]
                         
                         # Process content
-                        await process_content(content_processor, st.session_state.crawl_results)
+                        process_content(content_processor, st.session_state.crawl_results)
                                 
                     except Exception as e:
                         error_msg = f"Crawling failed: {str(e)}"
@@ -113,7 +106,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as e:
         logger.critical(f"Critical application error: {str(e)}", exc_info=True)
         st.error("A critical error occurred. Please check the logs for details.")

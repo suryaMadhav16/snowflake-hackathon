@@ -295,15 +295,15 @@ class SnowflakeManager:
                 metadata = {
                     'MEDIA': getattr(result, 'media', {}) or {},
                     'LINKS': getattr(result, 'links', {}) or {},
-                    'METADATA': getattr(result, 'metadata', {}) or {}
+                    'METADATA': getattr(result, 'metadata', {}) or {},                    
                 }
-                
+                content = result.markdown_v2.raw_markdown if hasattr(result.markdown_v2, 'raw_markdown') else result.markdown
                 results_data.append({
                     'URL': result.url,
                     'SUCCESS': result.success,
                     'ERROR_MESSAGE': result.error_message if hasattr(result, 'error_message') else None,
-                    'METADATA': json.dumps(metadata),
-                    'TIMESTAMP': datetime.now()
+                    'METADATA': json.dumps(metadata),                    
+                    'MARKDOWN': content,
                 })
             
             if results_data:
@@ -319,28 +319,9 @@ class SnowflakeManager:
                     lambda: write_pandas(conn, df, table_name)
                 )
                 
-                # Call sync procedure with better error handling
-                logger.info("Syncing content...")
-                sync_result = await self._execute_query(
-                    f"CALL {self.database}.{self.schema}.SYNC_CRAWL_CONTENT()",
-                    fetch=True
-                )
                 
-                if sync_result and len(sync_result) > 0:
-                    result_obj = sync_result[0].get('SYNC_CRAWL_CONTENT')
-                    # Handle string results
-                    if isinstance(result_obj, str):
-                        logger.info(f"Content sync completed with result: {result_obj}")
-                    # Handle dictionary results
-                    elif isinstance(result_obj, dict):
-                        if result_obj.get('status') == 'success':
-                            logger.info(f"Content sync successful: {result_obj.get('message')} ({result_obj.get('rows_processed')} rows processed)")
-                        else:
-                            logger.error(f"Content sync failed: {result_obj.get('error', {}).get('message', 'Unknown error')}")
-                    else:
-                        logger.info(f"Content sync completed with unexpected result type: {type(result_obj)}")
                 
-                logger.info("Successfully saved results and synced content")
+                
                 
         except Exception as e:
             logger.error(f"Error saving results: {str(e)}")

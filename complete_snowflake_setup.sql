@@ -130,9 +130,6 @@ $$
 ;
 
 
-
-
-
 CREATE OR REPLACE FUNCTION ANSWER_QUERY(query_text STRING)
 RETURNS TABLE (
     response STRING, 

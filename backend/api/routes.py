@@ -24,6 +24,9 @@ from .models import (
 )
 
 from crawl4ai import BrowserConfig, CrawlerRunConfig, CacheMode
+from crawl4ai.content_filter_strategy import PruningContentFilter
+from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+
 
 router = APIRouter()
 
@@ -40,6 +43,16 @@ DEFAULT_BROWSER_CONFIG = BrowserConfig(
     viewport_width=1080,
     viewport_height=800
 )
+# TODO: Do further research on the PruningContentFilter and DefaultMarkdownGenerator classes. They not working as expected. So sticking to the default configuration for now.
+prune_filter = PruningContentFilter(
+    user_query="only filter nav bars",    
+    threshold=0.5,           
+    threshold_type="dynamic",      
+    min_word_threshold=0
+)
+
+md_generator = DefaultMarkdownGenerator(content_filter=prune_filter)
+
 
 # Default crawler behavior configuration
 DEFAULT_CRAWLER_CONFIG = CrawlerRunConfig(
@@ -52,7 +65,10 @@ DEFAULT_CRAWLER_CONFIG = CrawlerRunConfig(
     screenshot=False,        # Disable screenshot capture
     pdf=False,              # Disable PDF generation
     exclude_external_images=False,  # Include external images
-    wait_for_images=True    # Wait for image loading
+    wait_for_images=False,    # Wait for image loading,
+    markdown_generator=md_generator,
+    excluded_tags=["form", "header", "footer", "nav"],
+
 )
 
 @router.post("/discover", response_model=DiscoverURLResponse)
@@ -147,7 +163,7 @@ async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
             db=db  # Pass configured db instance
         )
         
-        results = []
+        results = []        
         async for batch_results in crawler.process_batch(request.urls):
             for result in batch_results:
                 # Get saved files for this result from database
@@ -158,6 +174,7 @@ async def crawl_urls(request: CrawlRequest) -> CrawlResponse:
                     for file in files:
                         print(f"Found saved file: {file['URL']}")
                         saved_files[file['FILE_NAME']] = file['URL']
+                
                 results.append(CrawlResult(
                     url=result.url,
                     success=result.success,

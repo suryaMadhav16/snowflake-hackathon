@@ -136,7 +136,8 @@ class SnowflakeClient:
     
     def sync_cral_content(self):
         self.session.sql("CALL LLM.RAG.SYNC_CRAWL_CONTENT()").collect()
-        
+        return True
+    
     def generate_embeddings(self, file_name: str, model: str = 'snowflake-arctic-embed-m-v1.5') -> bool:
         """Generate embeddings for document chunks"""
         try:
@@ -176,7 +177,7 @@ class SnowflakeClient:
                     similarity DESC
                 LIMIT ?
             """, params=[query, similarity_threshold, num_chunks]).collect()
-            return [dict(row) for row in result]
+            return [row.asDict() for row in result]
         except Exception as e:
             logger.error(f"Failed to find similar chunks: {str(e)}", exc_info=True)
             return []

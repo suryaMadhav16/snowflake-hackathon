@@ -24,3 +24,5 @@ webscraper/utils/__pycache__/url_analyzer.cpython-312.pyc
 **/**/__pycache__/
 *.py[cod]
 *$py.class
+frontend/.streamlit/secrets.toml
+frontend/.streamlit/secrets.toml

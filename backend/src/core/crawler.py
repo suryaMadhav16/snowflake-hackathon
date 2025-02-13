@@ -4,7 +4,7 @@ import base64
 import re
 from typing import List, Dict, AsyncGenerator, Union, Optional, Set
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from pathlib import Path
 from crawl4ai import (
     AsyncWebCrawler, 
@@ -158,10 +158,15 @@ class BatchCrawler:
             ['https://example.com/public/doc']
         """
         if not self.excluded_patterns:
-            return urls
+            res = set()
+            for urlo in urls:
+                url = self.clean_url(urlo)    
+                res.add(url)            
+            return list(res)
             
         filtered = []
-        for url in urls:
+        for urlo in urls:
+            url = self.clean_url(urlo)
             if not self.should_skip_url(url):
                 filtered.append(url)
         
@@ -238,13 +243,13 @@ class BatchCrawler:
                                 if result.success:
                                     self.metrics['successful'] += 1
                                     await self.db.save_results([result])
-                                    
-                                    if self.content_processor:
-                                        saved_files = await self.content_processor.save_content(result)
-                                        for content_type, files in saved_files.items():
-                                            if content_type in self.metrics['saved_content']:
-                                                self.metrics['saved_content'][content_type] += len(files)
-                                    processed_results.append(result)
+                                    # Dropping saving content as a file in stage as i am already additing the markdown content to the database in CRAWK_METADATA table
+                                    # if self.content_processor:
+                                    #     saved_files = await self.content_processor.save_content(result)
+                                    #     for content_type, files in saved_files.items():
+                                    #         if content_type in self.metrics['saved_content']:
+                                    #             self.metrics['saved_content'][content_type] += len(files)
+                                    # processed_results.append(result)
                                 else:
                                     self.metrics['failed'] += 1
                                     logger.warning(f"Crawl failed for {result.url}: {result.error_message}")
@@ -312,4 +317,33 @@ class BatchCrawler:
             >>> print(f"Processed {metrics['successful']} URLs successfully")
             >>> print(f"Average rate: {metrics['urls_per_second']:.2f} URLs/second")
         """
-        return self.metrics.copy()
+        return self.metrics.copy()    
+
+    def clean_url(self ,url: str) -> str:
+        """
+        Remove query parameters, fragment identifiers, and extra parameters from a URL.
+        
+        This function parses the given URL and reconstructs it using only the
+        scheme, network location, and path. If an error is encountered (for example,
+        if the URL is malformed), it returns the original URL.
+
+        Parameters:
+        url (str): The URL to be cleaned.
+
+        Returns:
+        str: The cleaned URL with only the scheme, netloc, and path.
+        """
+        try:
+            parsed = urlparse(url)
+            # Reassemble URL without parameters, query, or fragment
+            cleaned = urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+            return cleaned
+        except Exception:
+            # On error, simply return the original URL
+            return url
+
+
+if __name__ == "__main__":
+    test_url = "https://quickstarts.snowflake.com/guide/data_engineering_with_notebooks/index.html?index=..%2F..index#0"
+    print("Clean URL:", clean_url(test_url))
+

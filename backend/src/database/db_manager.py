@@ -29,10 +29,12 @@ class DatabaseManager(SnowflakeManager):
                 await super().initialize()
                 
                 # Load URL cache from Snowflake
-                logger.info("Loading URL cache")
-                cached_urls = await self.get_cached_urls()
-                self.url_cache = set(cached_urls)
-                logger.info(f"Loaded {len(self.url_cache)} cached URLs")
+                # logger.info("Loading URL cache")
+                # cached_urls = await self.get_cached_urls()
+                # self.url_cache = set(cached_urls)
+                # logger.info(f"Loaded {len(self.url_cache)} cached URLs")
+                logger.info("URL cache disabled")
+                self.url_cache = set()
                 
                 self._initialized = True
                 logger.info("DatabaseManager initialized successfully")
