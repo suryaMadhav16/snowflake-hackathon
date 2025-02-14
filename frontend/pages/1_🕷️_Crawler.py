@@ -27,32 +27,21 @@ def initialize_session_state():
         st.session_state.crawl_results = None
     if "crawled_domains" not in st.session_state:
         st.session_state.crawled_domains = set()
+    if "selected_urls" not in st.session_state:
+        st.session_state.selected_urls = None
+    if "exclude_patterns" not in st.session_state:
+        st.session_state.exclude_patterns = None
 
 @st.cache_resource
 def get_api_client():
     return APIClient()
-
-def process_content(content_processor, results):
-    """Process crawled content"""
-    try:
-        with st.spinner("Processing content for RAG..."):
-            success = content_processor.process_crawl_results(results)
-            if not success:
-                st.warning("Some content could not be processed. Check the logs for details.")
-            return success
-    except Exception as e:
-        error_msg = f"Content processing failed: {str(e)}"
-        logger.error(f"{error_msg}\n{traceback.format_exc()}")
-        st.error(error_msg)
-        return False
 
 def main():
     logger.info("Starting crawler application")
     st.title("🕷️ Web Crawler")
     # Initialize components
     initialize_session_state()
-    api_client = get_api_client()
-    content_processor = get_content_processor()
+    api_client = get_api_client()    
     
     # URL Input and Discovery
     url, mode, discover_clicked = render_url_input()
@@ -61,6 +50,11 @@ def main():
         with st.spinner("Discovering URLs..."):
             try:
                 response = api_client.discover_urls(url, mode)
+                # Clear any existing selections
+                st.session_state.selection_df = None
+                st.session_state.selected_urls = None
+                st.session_state.exclude_patterns = None
+                # Update with new discoveries
                 st.session_state.discovered_urls = response["urls"]
                 st.session_state.domain = response["domain"]
                 st.success(f"Found {len(response['urls'])} URLs")
@@ -77,16 +71,21 @@ def main():
             st.session_state.discovered_urls,
             st.session_state.domain
         )
+        
+        # Store selected URLs and patterns in session state
+        selected_urls = st.session_state.selected_urls
+        exclude_patterns = st.session_state.exclude_patterns
+        
         if selected_urls:
             if st.button("Start Crawling", type="primary"):
                 with st.spinner("Crawling selected URLs..."):
                     try:
-                        # Crawl URLs
-                        response = api_client.crawl_urls(selected_urls, exclude_patterns)
-                        st.session_state.crawl_results = response["results"]
-                        
-                        # Process content
-                        process_content(content_processor, st.session_state.crawl_results)
+                        # Always use session state values
+                        response = api_client.crawl_urls(
+                            st.session_state.selected_urls,
+                            st.session_state.exclude_patterns
+                        )
+                        st.session_state.crawl_results = response["results"]                                            
                                 
                     except Exception as e:
                         error_msg = f"Crawling failed: {str(e)}"
@@ -99,9 +98,12 @@ def main():
             render_results(st.session_state.crawl_results)
             
             if st.button("Start Over"):
+                # Clear all session state
                 st.session_state.discovered_urls = None
                 st.session_state.domain = None
                 st.session_state.crawl_results = None
+                st.session_state.selected_urls = None
+                st.session_state.exclude_patterns = None
                 st.rerun()
 
 if __name__ == "__main__":
