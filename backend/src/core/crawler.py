@@ -230,15 +230,18 @@ class BatchCrawler:
             
             try:
                 async with AsyncWebCrawler(config=self.browser_config) as crawler:
-                    results = await crawler.arun_many(
-                        urls=batch,
+                    results = await crawler.arun(
+                        url=batch[0],
                         config=self.crawl_config
                     )
-                    
+                    print(type(results))
                     # Process results
                     processed_results = []
                     for result in results:
                         try:
+                            print("Result type:", type(result))
+                            # print all the keys in result
+                            print(result.__dict__.keys())
                             if isinstance(result, CrawlResult):
                                 if result.success:
                                     self.metrics['successful'] += 1

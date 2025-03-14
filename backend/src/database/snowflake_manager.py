@@ -297,7 +297,7 @@ class SnowflakeManager:
                     'LINKS': getattr(result, 'links', {}) or {},
                     'METADATA': getattr(result, 'metadata', {}) or {},                    
                 }
-                content = result.markdown_v2.raw_markdown if hasattr(result.markdown_v2, 'raw_markdown') else result.markdown
+                content = result.markdown.raw_markdown if hasattr(result.markdown, 'raw_markdown') else result.markdown
                 results_data.append({
                     'URL': result.url,
                     'SUCCESS': result.success,

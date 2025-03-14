@@ -66,7 +66,6 @@ def process_user_query(user_query, n_chunks):
     
     # Build the prompt from the original query and selected chunks.
     prompt = build_prompt(user_query, selected_chunks)
-    st.code(prompt, language="text")
     
     # Call the fully qualified ANSWER_QUERY stored procedure.
     answer = call_answer_query(session, prompt)
@@ -78,7 +77,7 @@ def main():
     st.title("LLM Chat Interface")
     
     # Sidebar slider to select the number of relevant chunks (between 1 and 5).
-    n_chunks = st.sidebar.slider("Select number of relevant chunks", min_value=1, max_value=5, value=3)
+    n_chunks = st.sidebar.slider("Select number of relevant chunks", min_value=1, max_value=5, value=1)
     
     # Initialize session state for conversation history.
     if "messages" not in st.session_state:
