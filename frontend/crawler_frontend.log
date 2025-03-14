@@ -1,0 +1,553 @@
+2025-03-01 14:20:47,798 - INFO - Starting crawler application
+2025-03-01 14:20:49,249 - INFO - Starting crawler application
+2025-03-01 14:20:50,102 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:20:50,102 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:20:50,102 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:20:54,852 - INFO - Number of results in first chunk: 1
+2025-03-01 14:20:55,099 - INFO - Number of results in first chunk: 1
+2025-03-01 14:20:55,978 - INFO - Number of results in first chunk: 3
+2025-03-01 14:20:55,979 - INFO - closed
+2025-03-01 14:20:56,092 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:20:56,885 - INFO - Starting crawler application
+2025-03-01 14:21:02,879 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:21:02,881 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:21:02,881 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:21:03,719 - INFO - Number of results in first chunk: 1
+2025-03-01 14:21:03,873 - INFO - Number of results in first chunk: 1
+2025-03-01 14:21:04,025 - INFO - Number of results in first chunk: 3
+2025-03-01 14:21:04,025 - INFO - closed
+2025-03-01 14:21:04,138 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:21:16,933 - INFO - Starting crawler application
+2025-03-01 14:22:34,276 - INFO - Starting crawler application
+2025-03-01 14:22:38,711 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:22:38,713 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:22:38,714 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:22:41,296 - INFO - Number of results in first chunk: 1
+2025-03-01 14:22:41,307 - INFO - Starting crawler application
+2025-03-01 14:22:41,572 - INFO - Number of results in first chunk: 1
+2025-03-01 14:22:41,793 - INFO - Number of results in first chunk: 3
+2025-03-01 14:22:41,798 - INFO - closed
+2025-03-01 14:22:41,911 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:00,331 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:00,333 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:00,334 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:00,494 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:00,494 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:00,494 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:01,219 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:01,230 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:01,387 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:01,395 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:01,581 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:01,585 - INFO - closed
+2025-03-01 14:48:01,653 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:01,654 - INFO - closed
+2025-03-01 14:48:01,693 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:01,766 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:01,919 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:01,919 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:01,920 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:02,953 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:03,119 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:04,012 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:04,013 - INFO - closed
+2025-03-01 14:48:04,128 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:04,264 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:04,264 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:04,265 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:04,925 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:05,103 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:05,842 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:05,844 - INFO - closed
+2025-03-01 14:48:05,964 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:06,851 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:06,852 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:06,852 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:08,035 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:08,208 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:08,385 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:08,386 - INFO - closed
+2025-03-01 14:48:08,492 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:09,904 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:09,905 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:09,906 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:10,527 - INFO - Starting crawler application
+2025-03-01 14:48:10,628 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:10,797 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:10,993 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:10,994 - INFO - closed
+2025-03-01 14:48:11,106 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:13,583 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:13,584 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:13,584 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:14,245 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:14,406 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:14,596 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:14,597 - INFO - closed
+2025-03-01 14:48:14,709 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:14,851 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:14,852 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:14,853 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:16,058 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:16,245 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:16,435 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:16,435 - INFO - closed
+2025-03-01 14:48:16,545 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:16,683 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:16,683 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:16,684 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:17,378 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:17,540 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:17,810 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:17,811 - INFO - closed
+2025-03-01 14:48:17,927 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:19,774 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:19,776 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:19,776 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:20,552 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:20,710 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:20,872 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:20,873 - INFO - closed
+2025-03-01 14:48:20,989 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:21,132 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:21,134 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:21,134 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:21,938 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:22,077 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:22,751 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:22,752 - INFO - closed
+2025-03-01 14:48:22,863 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:22,993 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:22,994 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:22,994 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:24,022 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:24,171 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:24,780 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:24,781 - INFO - closed
+2025-03-01 14:48:24,891 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:31,394 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:31,395 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:31,396 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:32,119 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:32,283 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:32,445 - INFO - Number of results in first chunk: 3
+2025-03-01 14:48:32,445 - INFO - closed
+2025-03-01 14:48:32,550 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:32,681 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:32,681 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:32,682 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:33,318 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:33,464 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:34,016 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:34,018 - INFO - closed
+2025-03-01 14:48:34,128 - INFO - No async queries seem to be running, deleting session
+2025-03-01 14:48:34,261 - INFO - Snowflake Connector for Python Version: 3.12.4, Python Version: 3.11.11, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-01 14:48:34,262 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-01 14:48:34,262 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-01 14:48:35,517 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:35,693 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:36,128 - INFO - Number of results in first chunk: 1
+2025-03-01 14:48:36,130 - INFO - closed
+2025-03-01 14:48:36,238 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:23:33,777 - INFO - Starting crawler application
+2025-03-14 18:23:56,590 - INFO - Starting crawler application
+2025-03-14 18:23:57,624 - INFO - Starting crawler application
+2025-03-14 18:24:05,465 - ERROR - Failed to discover URLs: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/discover (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x13a7012d0>, 'Connection to localhost timed out. (connect timeout=300)'))
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connection.py", line 203, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+TimeoutError: [Errno 60] Operation timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connectionpool.py", line 791, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connectionpool.py", line 497, in _make_request
+    conn.request(
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connection.py", line 395, in request
+    self.endheaders()
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/http/client.py", line 1298, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/http/client.py", line 1058, in _send_output
+    self.send(msg)
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/http/client.py", line 996, in send
+    self.connect()
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connection.py", line 243, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connection.py", line 212, in _new_conn
+    raise ConnectTimeoutError(
+urllib3.exceptions.ConnectTimeoutError: (<urllib3.connection.HTTPConnection object at 0x13a7012d0>, 'Connection to localhost timed out. (connect timeout=300)')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/requests/adapters.py", line 667, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/connectionpool.py", line 845, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/urllib3/util/retry.py", line 515, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/discover (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x13a7012d0>, 'Connection to localhost timed out. (connect timeout=300)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/saisuryamadhav/Documents/snowflake-hackathon/frontend/pages/1_🕷️_Crawler.py", line 52, in main
+    response = api_client.discover_urls(url, mode)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/saisuryamadhav/Documents/snowflake-hackathon/frontend/services/api_client.py", line 64, in discover_urls
+    return self._make_request("POST", "discover", data, timeout=300)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/saisuryamadhav/Documents/snowflake-hackathon/frontend/services/api_client.py", line 26, in _make_request
+    response = requests.request(
+               ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/getting_started_llmops/lib/python3.11/site-packages/requests/adapters.py", line 688, in send
+    raise ConnectTimeout(e, request=request)
+requests.exceptions.ConnectTimeout: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/discover (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x13a7012d0>, 'Connection to localhost timed out. (connect timeout=300)'))
+
+2025-03-14 18:36:26,547 - INFO - Starting crawler application
+2025-03-14 18:36:48,257 - INFO - Starting crawler application
+2025-03-14 18:36:49,316 - INFO - Starting crawler application
+2025-03-14 18:37:09,288 - INFO - Starting crawler application
+2025-03-14 18:37:35,572 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:37:35,572 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:37:35,573 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:37:38,073 - INFO - closed
+2025-03-14 18:37:38,182 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:37:38,337 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:37:38,337 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:37:38,337 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:37:40,944 - INFO - closed
+2025-03-14 18:37:41,051 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:37:41,184 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:37:41,189 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:37:41,190 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:37:42,884 - INFO - closed
+2025-03-14 18:37:42,995 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:37:46,958 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:37:46,965 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:37:46,967 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:37:48,231 - INFO - closed
+2025-03-14 18:37:48,334 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:37:48,451 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:37:48,451 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:37:48,452 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:37:50,237 - INFO - closed
+2025-03-14 18:37:50,344 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:37:50,476 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:37:50,476 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:37:50,476 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:37:52,152 - INFO - closed
+2025-03-14 18:37:52,257 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:37:54,004 - INFO - Starting crawler application
+2025-03-14 18:38:32,476 - INFO - Starting crawler application
+2025-03-14 18:38:33,614 - INFO - Starting crawler application
+2025-03-14 18:38:36,565 - INFO - Starting crawler application
+2025-03-14 18:39:04,695 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:39:04,699 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:39:04,700 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:39:06,744 - INFO - closed
+2025-03-14 18:39:06,853 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:39:06,982 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:39:06,982 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:39:06,982 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:39:08,404 - INFO - closed
+2025-03-14 18:39:08,508 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:39:08,626 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:39:08,626 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:39:08,626 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:39:10,189 - INFO - closed
+2025-03-14 18:39:10,298 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:44:29,354 - INFO - Starting crawler application
+2025-03-14 18:44:32,230 - INFO - Starting crawler application
+2025-03-14 18:44:33,119 - INFO - Starting crawler application
+2025-03-14 18:44:36,205 - INFO - Starting crawler application
+2025-03-14 18:44:50,988 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:44:50,991 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:44:50,991 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:44:52,413 - INFO - closed
+2025-03-14 18:44:53,069 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:44:53,191 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:44:53,192 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:44:53,192 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:44:54,297 - INFO - closed
+2025-03-14 18:44:54,406 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:44:54,536 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:44:54,536 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:44:54,536 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:44:55,589 - INFO - closed
+2025-03-14 18:44:55,693 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:46:18,116 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:46:18,118 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:46:18,118 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:46:19,702 - INFO - closed
+2025-03-14 18:46:19,808 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:46:19,926 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:46:19,927 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:46:19,927 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:46:20,939 - INFO - closed
+2025-03-14 18:46:21,046 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:46:21,202 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:46:21,202 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:46:21,202 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:46:23,190 - INFO - closed
+2025-03-14 18:46:23,296 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:47:10,859 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:47:10,862 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:47:10,863 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:47:14,157 - INFO - closed
+2025-03-14 18:47:14,268 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:47:14,390 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:47:14,391 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:47:14,391 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:47:16,070 - INFO - closed
+2025-03-14 18:47:16,241 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:47:16,387 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:47:16,388 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:47:16,388 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:47:18,441 - INFO - closed
+2025-03-14 18:47:18,549 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:48:26,114 - INFO - Starting crawler application
+2025-03-14 18:48:28,124 - INFO - Starting crawler application
+2025-03-14 18:48:30,931 - INFO - Starting crawler application
+2025-03-14 18:48:31,044 - INFO - Starting crawler application
+2025-03-14 18:48:33,415 - INFO - Starting crawler application
+2025-03-14 18:50:10,613 - INFO - Starting crawler application
+2025-03-14 18:50:14,742 - INFO - Starting crawler application
+2025-03-14 18:50:15,929 - INFO - Starting crawler application
+2025-03-14 18:50:18,194 - INFO - Starting crawler application
+2025-03-14 18:50:49,296 - INFO - Starting crawler application
+2025-03-14 18:50:53,560 - INFO - Starting crawler application
+2025-03-14 18:53:26,006 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:53:26,006 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:53:26,007 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:53:29,759 - INFO - closed
+2025-03-14 18:53:29,936 - INFO - No async queries seem to be running, deleting session
+2025-03-14 18:53:30,234 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 18:53:30,235 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 18:53:30,236 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 18:53:31,408 - INFO - Snowpark Session information: 
+"version" : 1.28.0,
+"python.version" : 3.12.7,
+"python.connector.version" : 3.13.2,
+"python.connector.session.id" : 1330284518899922,
+"os.name" : Darwin
+
+2025-03-14 18:54:58,257 - INFO - Starting crawler application
+2025-03-14 18:55:03,212 - INFO - Starting crawler application
+2025-03-14 18:55:04,212 - INFO - Starting crawler application
+2025-03-14 18:55:15,218 - INFO - Starting crawler application
+2025-03-14 18:59:08,436 - INFO - Starting crawler application
+2025-03-14 18:59:11,121 - INFO - Starting crawler application
+2025-03-14 19:00:19,627 - INFO - Starting crawler application
+2025-03-14 19:00:21,189 - INFO - Starting crawler application
+2025-03-14 19:01:10,717 - INFO - Closing session: 1330284518899922
+2025-03-14 19:01:10,718 - INFO - Canceling all running queries
+2025-03-14 19:01:13,124 - INFO - Force exit
+2025-03-14 19:01:13,125 - INFO - closed
+2025-03-14 19:01:13,481 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:01:13,608 - INFO - Closed session: 1330284518899922
+2025-03-14 19:06:09,452 - INFO - Starting crawler application
+2025-03-14 19:06:14,093 - INFO - Starting crawler application
+2025-03-14 19:06:17,486 - INFO - Starting crawler application
+2025-03-14 19:06:18,461 - INFO - Starting crawler application
+2025-03-14 19:06:20,764 - INFO - Starting crawler application
+2025-03-14 19:08:50,160 - INFO - Starting crawler application
+2025-03-14 19:09:18,979 - INFO - Starting crawler application
+2025-03-14 19:10:11,853 - INFO - Starting crawler application
+2025-03-14 19:13:50,598 - INFO - Starting crawler application
+2025-03-14 19:14:42,262 - INFO - Starting crawler application
+2025-03-14 19:14:57,816 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:14:57,817 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:14:57,817 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:14:58,825 - INFO - closed
+2025-03-14 19:14:58,934 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:14:59,055 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:14:59,056 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:14:59,056 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:15:00,026 - INFO - closed
+2025-03-14 19:15:00,127 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:15:00,244 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:15:00,244 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:15:00,244 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:15:01,511 - INFO - closed
+2025-03-14 19:15:01,618 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:16:05,192 - INFO - Starting crawler application
+2025-03-14 19:16:16,562 - INFO - Starting crawler application
+2025-03-14 19:16:18,932 - INFO - Starting crawler application
+2025-03-14 19:16:19,052 - INFO - Starting crawler application
+2025-03-14 19:16:21,083 - INFO - Starting crawler application
+2025-03-14 19:17:12,947 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:17:12,948 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:17:12,948 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:17:14,921 - INFO - closed
+2025-03-14 19:17:15,025 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:17:15,152 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:17:15,153 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:17:15,153 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:17:16,524 - INFO - closed
+2025-03-14 19:17:16,628 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:17:16,744 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:17:16,745 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:17:16,745 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:17:18,080 - INFO - closed
+2025-03-14 19:17:18,190 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:17:28,975 - INFO - Starting crawler application
+2025-03-14 19:17:32,985 - INFO - Starting crawler application
+2025-03-14 19:17:41,313 - INFO - Starting crawler application
+2025-03-14 19:17:42,633 - INFO - Starting crawler application
+2025-03-14 19:17:50,867 - INFO - Starting crawler application
+2025-03-14 19:21:16,367 - INFO - Starting crawler application
+2025-03-14 19:21:18,060 - INFO - Starting crawler application
+2025-03-14 19:22:02,112 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:02,120 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:02,120 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:03,892 - INFO - closed
+2025-03-14 19:22:03,995 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:04,124 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:04,124 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:04,125 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:05,350 - INFO - closed
+2025-03-14 19:22:05,458 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:05,581 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:05,581 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:05,582 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:06,701 - INFO - closed
+2025-03-14 19:22:06,808 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:17,996 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:18,000 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:18,001 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:19,226 - INFO - closed
+2025-03-14 19:22:19,331 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:19,456 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:19,456 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:19,456 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:21,212 - INFO - closed
+2025-03-14 19:22:21,318 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:21,467 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:21,467 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:21,468 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:23,239 - INFO - closed
+2025-03-14 19:22:23,346 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:32,889 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:32,891 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:32,891 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:34,708 - INFO - closed
+2025-03-14 19:22:34,812 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:34,933 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:34,933 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:34,934 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:35,943 - INFO - closed
+2025-03-14 19:22:36,043 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:36,173 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:36,173 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:36,174 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:42,412 - INFO - closed
+2025-03-14 19:22:42,526 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:42,687 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:42,687 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:42,687 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:45,141 - INFO - closed
+2025-03-14 19:22:45,245 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:22:45,371 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:22:45,371 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:22:45,371 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:22:47,287 - INFO - closed
+2025-03-14 19:22:47,392 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:23:39,239 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:23:39,242 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:23:39,242 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:23:39,910 - INFO - Snowpark Session information: 
+"version" : 1.28.0,
+"python.version" : 3.12.7,
+"python.connector.version" : 3.13.2,
+"python.connector.session.id" : 1330284518897218,
+"os.name" : Darwin
+
+2025-03-14 19:24:28,606 - INFO - Closing session: 1330284518897218
+2025-03-14 19:24:28,607 - INFO - Canceling all running queries
+2025-03-14 19:24:28,794 - INFO - closed
+2025-03-14 19:24:28,900 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:24:29,031 - INFO - Closed session: 1330284518897218
+2025-03-14 19:26:02,627 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:26:02,628 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:26:02,628 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:26:03,362 - INFO - Snowpark Session information: 
+"version" : 1.28.0,
+"python.version" : 3.12.7,
+"python.connector.version" : 3.13.2,
+"python.connector.session.id" : 1330284518897278,
+"os.name" : Darwin
+
+2025-03-14 19:26:15,671 - INFO - Closing session: 1330284518897278
+2025-03-14 19:26:15,672 - INFO - Canceling all running queries
+2025-03-14 19:26:15,842 - INFO - closed
+2025-03-14 19:26:15,947 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:26:16,059 - INFO - Closed session: 1330284518897278
+2025-03-14 19:29:14,045 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:29:14,046 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:29:14,046 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:29:15,721 - INFO - closed
+2025-03-14 19:29:15,822 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:29:15,938 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:29:15,938 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:29:15,939 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:29:17,556 - INFO - closed
+2025-03-14 19:29:17,663 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:29:17,795 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:29:17,795 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:29:17,795 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:29:19,132 - INFO - Starting crawler application
+2025-03-14 19:29:19,238 - INFO - closed
+2025-03-14 19:29:19,341 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:29:42,648 - INFO - Starting crawler application
+2025-03-14 19:29:44,224 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:29:44,224 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:29:44,224 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:29:45,834 - INFO - closed
+2025-03-14 19:29:45,947 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:29:46,101 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:29:46,101 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:29:46,101 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:29:47,014 - INFO - closed
+2025-03-14 19:29:47,119 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:29:47,234 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:29:47,234 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:29:47,234 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:29:48,405 - INFO - closed
+2025-03-14 19:29:48,515 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:30:53,315 - INFO - Snowflake Connector for Python Version: 3.13.2, Python Version: 3.12.7, Platform: macOS-15.3-arm64-arm-64bit
+2025-03-14 19:30:53,318 - INFO - Connecting to GLOBAL Snowflake domain
+2025-03-14 19:30:53,319 - INFO - This connection is in OCSP Fail Open Mode. TLS Certificates would be checked for validity and revocation status. Any other Certificate Revocation related exceptions or OCSP Responder failures would be disregarded in favor of connectivity.
+2025-03-14 19:30:54,049 - INFO - Snowpark Session information: 
+"version" : 1.28.0,
+"python.version" : 3.12.7,
+"python.connector.version" : 3.13.2,
+"python.connector.session.id" : 1330284518894518,
+"os.name" : Darwin
+
+2025-03-14 19:33:32,812 - INFO - Closing session: 1330284518894518
+2025-03-14 19:33:32,813 - INFO - Canceling all running queries
+2025-03-14 19:33:32,983 - INFO - closed
+2025-03-14 19:33:33,086 - INFO - No async queries seem to be running, deleting session
+2025-03-14 19:33:33,210 - INFO - Closed session: 1330284518894518

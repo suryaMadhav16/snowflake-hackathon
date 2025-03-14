@@ -1,0 +1,13 @@
+streamlit
+plotly
+pandas
+crawl4ai
+psutil
+aiosqlite
+asyncio
+python-dateutil
+beautifulsoup4
+html5lib
+playwright
+pytest-playwright
+playwright
