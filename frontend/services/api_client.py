@@ -1,13 +1,17 @@
 import requests
 from typing import List, Dict, Optional
 import streamlit as st
-
+from dotenv import load_dotenv
+load_dotenv()
+import os
 class APIClient:
     """Client for interacting with the crawler backend API"""
     
     def __init__(self):
         """Initialize API client with base URL from secrets"""
-        self.base_url = st.secrets["api_url"]
+        # self.base_url = st.secrets["api_url"]
+        self.base_url = os.getenv("API_URL")
+        print(f"-------------------------------------\n base:{self.base_url}")
         if not self.base_url.endswith('/'):
             self.base_url += '/'
     

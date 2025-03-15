@@ -5,3 +5,4 @@ plotly
 snowflake-connector-python
 snowflake-snowpark-python
 python-dotenv
+snowflake-ml-python

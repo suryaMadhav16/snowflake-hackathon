@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    # build: 
+    #   context: ./backend
+    #   dockerfile: Dockerfile
+    #   target: production
+    image: udaykirandasari/snowflake-backend:prod
+    container_name: snowflake-backend-prod
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    networks:
+      - app-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  frontend:
+    # build:
+    #   context: ./frontend
+    #   dockerfile: Dockerfile
+    #   target: production
+    image: udaykirandasari/snowflake-frontend:prod
+    container_name: snowflake-frontend-prod
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend/.streamlit:/app/.streamlit
+    env_file:
+      - ./frontend/.env
+    environment:
+      - API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network-prod
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+networks:
+  app-network-prod:
+    name: snowflake-network-prod
+    driver: bridge

@@ -8,5 +8,5 @@ snowflake-sqlalchemy
 pandas
 python-dotenv
 requests
-logging
+
 pydantic
