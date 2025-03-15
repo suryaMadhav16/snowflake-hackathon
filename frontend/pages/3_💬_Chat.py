@@ -46,23 +46,32 @@ def build_prompt(user_query, chunks):
     return prompt
 
 # Process the user query: fetch the relevant chunks and generate an LLM response.
-def process_user_query(user_query, n_chunks):
+def process_user_query(user_query, n_chunks, threshold):
     session = get_snowflake_session()
     
     # Fetch relevant chunks using the fully qualified stored procedure.
     relevant_chunks = call_get_relevant_chunks(session, user_query)
-    selected_chunks = relevant_chunks[:n_chunks] if relevant_chunks else []
+    
+    # Filter chunks based on threshold and only display those above 0.57
+    filtered_chunks = [chunk for chunk in relevant_chunks if chunk.get("score", 0) >= threshold]
+    filtered_chunks_display = [chunk for chunk in relevant_chunks if chunk.get("score", 0) > 0.57]
+    
+    selected_chunks = filtered_chunks[:n_chunks] if filtered_chunks else []
     
     # Display the retrieved chunks inside an expander for inspection.
-    if selected_chunks:
+    if filtered_chunks_display:
         with st.expander("View Relevant Chunks"):
-            for idx, chunk in enumerate(selected_chunks, start=1):
+            for idx, chunk in enumerate(filtered_chunks_display, start=1):
                 chunk_text = chunk.get("chunk", "No content available").strip()
                 score = chunk.get("score", "N/A")
                 st.markdown(f"**Chunk {idx} (Score: {score}):**")
                 st.write(chunk_text)
     else:
-        st.info("No relevant chunks available. The LLM will be prompted without additional context.")
+        st.info("No chunks found with relevance score above the display threshold (0.57)")
+    
+    if not selected_chunks:
+        st.warning(f"No chunks found with relevance score above the given threshold ({threshold})")
+        return "I cannot find any relevant information to answer your question with the current threshold. Please try lowering the threshold or rephrase your question."
     
     # Build the prompt from the original query and selected chunks.
     prompt = build_prompt(user_query, selected_chunks)
@@ -76,8 +85,9 @@ def main():
     st.set_page_config(page_title="LLM Chat", layout="wide")
     st.title("LLM Chat Interface")
     
-    # Sidebar slider to select the number of relevant chunks (between 1 and 5).
+    # Sidebar configuration
     n_chunks = st.sidebar.slider("Select number of relevant chunks", min_value=1, max_value=5, value=1)
+    threshold = st.sidebar.slider("Select relevance threshold", min_value=0.0, max_value=1.0, value=0.75, step=0.01)
     
     # Initialize session state for conversation history.
     if "messages" not in st.session_state:
@@ -99,7 +109,7 @@ def main():
         
         st.info("Processing your query...")
         # Process the query—retrieve chunks and generate an assistant response.
-        answer = process_user_query(user_input, n_chunks)
+        answer = process_user_query(user_input, n_chunks, threshold)
         
         # Append and display the assistant response.
         st.session_state.messages.append({"role": "assistant", "content": answer})
